@@ -30,6 +30,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
         window.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
         applyTransparentScreenInsets()
+        binding.menuAbout.isSelected = true
         binding.readmeText.text = formatReadme(loadReadme())
     }
 

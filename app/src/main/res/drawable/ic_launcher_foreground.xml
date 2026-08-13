@@ -2,9 +2,32 @@
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
+    android:autoMirrored="false"
     android:viewportWidth="108"
     android:viewportHeight="108">
+
+    <!-- lowercase z: even stroke, baseline y=78 -->
     <path
-        android:fillColor="#00D4C8"
-        android:pathData="M32,34 L76,34 L76,44 L50,64 L76,64 L76,74 L32,74 L32,64 L58,44 L32,44 Z" />
+        android:fillColor="#000000"
+        android:pathData="M20,45 L47,45 L47,52 L20,52 Z" />
+    <path
+        android:fillColor="#000000"
+        android:pathData="M20,71 L47,71 L47,78 L20,78 Z" />
+    <path
+        android:fillColor="#000000"
+        android:pathData="M34.8,52 L47,52 L32.2,71 L20,71 Z" />
+
+    <!-- uppercase M: same stroke and baseline as z -->
+    <path
+        android:fillColor="#000000"
+        android:pathData="M54,31 L61,31 L61,78 L54,78 Z" />
+    <path
+        android:fillColor="#000000"
+        android:pathData="M82,31 L89,31 L89,78 L82,78 Z" />
+    <path
+        android:fillColor="#000000"
+        android:pathData="M61,31 L68,31 L75,78 L68,78 Z" />
+    <path
+        android:fillColor="#000000"
+        android:pathData="M75,31 L82,31 L75,78 L68,78 Z" />
 </vector>

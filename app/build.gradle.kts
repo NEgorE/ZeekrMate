@@ -34,6 +34,32 @@ android {
     }
 }
 
+val apkVersionName = android.defaultConfig.versionName
+    ?: error("android.defaultConfig.versionName is required to name the APK")
+base.archivesName.set("ZeekrMate-$apkVersionName")
+
+androidComponents {
+    onVariants { variant ->
+        val assembleName = "assemble${variant.name.replaceFirstChar { it.uppercase() }}"
+        val apkDir = layout.buildDirectory.dir("outputs/apk/${variant.name}")
+        val versionName = variant.outputs.first().versionName
+        tasks.matching { it.name == assembleName }.configureEach {
+            doLast {
+                val name = versionName.orNull
+                    ?: error("versionName is required to name the APK")
+                val dir = apkDir.get().asFile
+                val dest = dir.resolve("ZeekrMate-$name.apk")
+                val source = dir.listFiles()
+                    ?.filter { it.isFile && it.extension.equals("apk", ignoreCase = true) }
+                    ?.firstOrNull { it.name != dest.name }
+                if (source != null && source.canonicalFile != dest.canonicalFile) {
+                    source.copyTo(dest, overwrite = true)
+                }
+            }
+        }
+    }
+}
+
 kotlin {
     compilerOptions {
         jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
