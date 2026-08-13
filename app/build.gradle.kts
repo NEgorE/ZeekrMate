@@ -10,8 +10,8 @@ android {
         applicationId = "com.zeekrmate.app"
         minSdk = 31
         targetSdk = 36
-        versionCode = 8
-        versionName = "0.1.7"
+        versionCode = 10
+        versionName = "0.1.9"
     }
 
     buildTypes {

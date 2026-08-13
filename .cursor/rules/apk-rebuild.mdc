@@ -18,3 +18,8 @@ alwaysApply: true
    - Версия: `D:\Zeekr\ZeekrMate\app\build.gradle.kts`
    - Выход: `D:\Zeekr\ZeekrMate\app\build\outputs\apk\debug\`
 5. Не использовать `C:\Program Files\Android\Android Studio\jbr`.
+6. Сборка всегда с `--offline`, чтобы Gradle не качал дистрибутив и зависимости из сети:
+   ```
+   .\gradlew.bat :app:assembleDebug --offline
+   ```
+7. Если `--offline` падает из-за пустого кэша (`No cached version`, `Could not download`), один раз собрать без `--offline`. Следующие пересборки снова только с `--offline`.
