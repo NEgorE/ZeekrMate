@@ -11,4 +11,7 @@
     <dimen name="menu_header_version_size">18sp</dimen>
     <dimen name="menu_header_padding_bottom">24dp</dimen>
     <dimen name="readme_padding_horizontal">36dp</dimen>
+    <dimen name="field_label_size">18sp</dimen>
+    <dimen name="field_text_size">22sp</dimen>
+    <dimen name="field_min_height">64dp</dimen>
 </resources>

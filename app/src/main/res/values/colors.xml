@@ -2,9 +2,13 @@
     <color name="screen_background">#0B0F14</color>
     <color name="readme_text">#E8EEF4</color>
     <color name="accent">#00D4C8</color>
+    <color name="line">#C5CBD3</color>
     <color name="scrollbar_thumb">#80E8EEF4</color>
     <color name="menu_pane_background">#0E141C</color>
-    <color name="menu_item_selected_background">#18222C</color>
+    <color name="menu_item_selected_background">#3A4450</color>
+    <color name="menu_item_unselected_text">#8A94A0</color>
     <color name="pane_separator">#1E2A36</color>
     <color name="menu_header_version">#8A94A0</color>
+    <color name="field_fill">#121820</color>
+    <color name="field_hint">#8A94A0</color>
 </resources>
