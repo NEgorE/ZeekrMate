@@ -5,8 +5,10 @@ import android.graphics.Typeface
 import android.os.Bundle
 import android.text.SpannableStringBuilder
 import android.text.Spanned
+import android.text.method.LinkMovementMethod
 import android.text.style.AbsoluteSizeSpan
 import android.text.style.StyleSpan
+import android.text.style.URLSpan
 import android.view.Gravity
 import android.view.ViewGroup
 import android.widget.FrameLayout
@@ -14,7 +16,6 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.WindowCompat
 import androidx.core.view.updateLayoutParams
 import com.zeekrmate.app.databinding.ActivityMainBinding
-import java.nio.charset.StandardCharsets
 import kotlin.math.roundToInt
 
 class MainActivity : AppCompatActivity() {
@@ -31,17 +32,22 @@ class MainActivity : AppCompatActivity() {
         window.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
         applyTransparentScreenInsets()
         binding.menuAbout.isSelected = true
-        binding.readmeText.text = formatReadme(loadReadme())
+        binding.appVersion.text = BuildConfig.VERSION_NAME
+        binding.readmeText.movementMethod = LinkMovementMethod.getInstance()
+        binding.readmeText.text = formatReadme(
+            getString(R.string.about_text, BuildConfig.VERSION_NAME)
+        )
     }
 
     private fun applyTransparentScreenInsets() {
         val screenHeight = windowManager.currentWindowMetrics.bounds.height()
-        val insetY = (screenHeight * 0.05f).roundToInt()
+        val topInset = (screenHeight * 0.07f).roundToInt()
+        val bottomInset = (screenHeight * 0.05f).roundToInt()
         binding.contentPanel.updateLayoutParams<FrameLayout.LayoutParams> {
             width = FrameLayout.LayoutParams.MATCH_PARENT
             gravity = Gravity.FILL_HORIZONTAL
-            topMargin = insetY
-            bottomMargin = insetY
+            topMargin = topInset
+            bottomMargin = bottomInset
             leftMargin = 0
             rightMargin = 0
             marginStart = 0
@@ -49,15 +55,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun loadReadme(): String {
-        return runCatching {
-            assets.open("README.md").bufferedReader(StandardCharsets.UTF_8).use { it.readText() }
-        }.getOrElse {
-            getString(R.string.readme_missing)
-        }
-    }
-
-    private fun formatReadme(markdown: String): CharSequence {
+    private fun formatReadme(markdown: String): SpannableStringBuilder {
         val builder = SpannableStringBuilder()
         val bodySizePx = resources.getDimensionPixelSize(R.dimen.readme_body_size)
         val h1SizePx = resources.getDimensionPixelSize(R.dimen.readme_h1_size)
@@ -87,7 +85,19 @@ class MainActivity : AppCompatActivity() {
                 else -> appendStyled(builder, line, bodySizePx)
             }
         }
-        return builder
+        return linkTelegram(builder)
+    }
+
+    private fun linkTelegram(text: SpannableStringBuilder): SpannableStringBuilder {
+        val handle = "@Esh_ka"
+        val url = "https://t.me/Esh_ka"
+        var start = text.indexOf(handle)
+        while (start >= 0) {
+            val end = start + handle.length
+            text.setSpan(URLSpan(url), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+            start = text.indexOf(handle, end)
+        }
+        return text
     }
 
     private fun cleanInline(text: String): String {

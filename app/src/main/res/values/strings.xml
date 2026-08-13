@@ -1,5 +1,32 @@
 <resources>
     <string name="app_name">ZeekrMate</string>
     <string name="menu_about">About</string>
-    <string name="readme_missing">Не удалось загрузить README.md</string>
+    <string name="about_missing">Не удалось загрузить About</string>
+    <string name="about_text" formatted="false"># ZeekrMate
+
+Приложение для центрального экрана Zeekr 7X.
+
+## Автомобиль
+
+- Zeekr 7X
+- Центральный экран: 16 дюймов, 3.5K Mini-LED
+- Ориентация: альбомная
+
+## Версия
+
+%1$s
+
+## Автор
+
+@Esh_ka
+
+## Важно
+
+Неофициальный проект. Не связан с Zeekr и Geely.
+
+## Отказ от ответственности
+
+Приложение предоставляется «как есть». Автор не несёт ответственности за любые последствия использования, включая влияние на работу автомобиля, потерю данных и ущерб. Используйте на свой риск.
+</string>
 </resources>
+

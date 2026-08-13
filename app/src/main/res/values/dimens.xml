@@ -7,5 +7,8 @@
     <dimen name="menu_item_padding_horizontal">28dp</dimen>
     <dimen name="menu_item_padding_vertical">22dp</dimen>
     <dimen name="menu_pane_padding_top">20dp</dimen>
+    <dimen name="menu_header_name_size">30sp</dimen>
+    <dimen name="menu_header_version_size">18sp</dimen>
+    <dimen name="menu_header_padding_bottom">24dp</dimen>
     <dimen name="readme_padding_horizontal">36dp</dimen>
 </resources>
