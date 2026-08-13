@@ -16,35 +16,116 @@
         <View
             android:layout_width="match_parent"
             android:layout_height="4dp"
-            android:background="@color/accent" />
+            android:background="@color/line" />
 
-        <androidx.core.widget.NestedScrollView
-            android:id="@+id/readmeScroll"
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight="1"
-            android:clipToPadding="false"
-            android:fadeScrollbars="false"
-            android:fillViewport="true"
-            android:overScrollMode="ifContentScrolls"
-            android:paddingBottom="24dp"
-            android:scrollbarStyle="insideOverlay"
-            android:scrollbarThumbVertical="@drawable/scrollbar_thumb"
-            android:scrollbars="vertical">
+            android:orientation="horizontal">
 
-            <TextView
-                android:id="@+id/readmeText"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:fontFamily="sans-serif"
-                android:letterSpacing="0.01"
-                android:lineSpacingMultiplier="1.28"
-                android:paddingHorizontal="0dp"
-                android:paddingTop="36dp"
-                android:paddingBottom="48dp"
-                android:textColor="@color/readme_text"
-                android:textIsSelectable="false"
-                android:textSize="@dimen/readme_body_size" />
-        </androidx.core.widget.NestedScrollView>
+            <LinearLayout
+                android:id="@+id/menuPane"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="0.3"
+                android:background="@color/menu_pane_background"
+                android:orientation="vertical"
+                android:paddingTop="@dimen/menu_pane_padding_top">
+
+                <LinearLayout
+                    android:id="@+id/menuHeader"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:clickable="false"
+                    android:focusable="false"
+                    android:orientation="vertical"
+                    android:paddingStart="@dimen/menu_item_padding_horizontal"
+                    android:paddingEnd="@dimen/menu_item_padding_horizontal"
+                    android:paddingBottom="@dimen/menu_header_padding_bottom">
+
+                    <TextView
+                        android:id="@+id/appName"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="sans-serif-medium"
+                        android:letterSpacing="0.02"
+                        android:text="@string/app_name"
+                        android:textColor="@color/readme_text"
+                        android:textSize="@dimen/menu_header_name_size" />
+
+                    <TextView
+                        android:id="@+id/appVersion"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="sans-serif"
+                        android:paddingTop="4dp"
+                        android:textColor="@color/menu_header_version"
+                        android:textSize="@dimen/menu_header_version_size" />
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/menuSentry"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/menu_item_background"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:fontFamily="sans-serif-medium"
+                    android:gravity="center_vertical"
+                    android:letterSpacing="0.02"
+                    android:minHeight="@dimen/menu_item_min_height"
+                    android:paddingStart="@dimen/menu_item_padding_horizontal"
+                    android:paddingTop="@dimen/menu_item_padding_vertical"
+                    android:paddingEnd="@dimen/menu_item_padding_horizontal"
+                    android:paddingBottom="@dimen/menu_item_padding_vertical"
+                    android:text="@string/menu_sentry"
+                    android:textColor="@color/menu_item_text"
+                    android:textSize="@dimen/menu_item_text_size" />
+
+                <TextView
+                    android:id="@+id/menuAbout"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/menu_item_background"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:fontFamily="sans-serif-medium"
+                    android:gravity="center_vertical"
+                    android:letterSpacing="0.02"
+                    android:minHeight="@dimen/menu_item_min_height"
+                    android:paddingStart="@dimen/menu_item_padding_horizontal"
+                    android:paddingTop="@dimen/menu_item_padding_vertical"
+                    android:paddingEnd="@dimen/menu_item_padding_horizontal"
+                    android:paddingBottom="@dimen/menu_item_padding_vertical"
+                    android:text="@string/menu_about"
+                    android:textColor="@color/menu_item_text"
+                    android:textSize="@dimen/menu_item_text_size" />
+            </LinearLayout>
+
+            <View
+                android:layout_width="1dp"
+                android:layout_height="match_parent"
+                android:background="@color/pane_separator" />
+
+            <FrameLayout
+                android:id="@+id/contentHost"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="0.7">
+
+                <include
+                    android:id="@+id/paneSentry"
+                    layout="@layout/pane_sentry"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent" />
+
+                <include
+                    android:id="@+id/paneAbout"
+                    layout="@layout/pane_about"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent" />
+            </FrameLayout>
+        </LinearLayout>
     </LinearLayout>
 </FrameLayout>

@@ -1,0 +1,20 @@
+---
+description: APK rebuilds go to the helper agent; bump patch version unless specified.
+alwaysApply: true
+---
+
+# Пересборка APK
+
+Если пользователь просит пересобрать APK:
+
+1. Отправь задачу вспомогательному агенту на пересборку. Не собирай APK сам, если пользователь явно не сказал «собери сам».
+2. Версия: последняя цифра `versionName` + 1, `versionCode` + 1. Пример: `0.1.1` → `0.1.2`. Не меняй схему, если пользователь дал другую версию.
+3. Имя файла: `ZeekrMate-{versionName}.apk`.
+4. Не ищи утилиты по диску C:. Используй только эти пути:
+   - Проект: `D:\Zeekr\ZeekrMate`
+   - Wrapper: `D:\Zeekr\ZeekrMate\gradlew.bat`
+   - JAVA_HOME: `C:\Users\111\.gradle\jdks\jetbrains_s_r_o_-21-amd64-windows.2`
+   - ANDROID_HOME: `C:\Users\111\AppData\Local\Android\Sdk`
+   - Версия: `D:\Zeekr\ZeekrMate\app\build.gradle.kts`
+   - Выход: `D:\Zeekr\ZeekrMate\app\build\outputs\apk\debug\`
+5. Не использовать `C:\Program Files\Android\Android Studio\jbr`.
