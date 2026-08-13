@@ -95,59 +95,155 @@ class SentryScanService : Service() {
             log.error("Не разобрал ссылку Telegram")
             return
         }
-        val now = System.currentTimeMillis()
-        val fromFolder = listed
-            ?.filter { it.isFile && it.extension.lowercase() in VIDEO_EXTENSIONS }
+        val eventFolders = listed
+            ?.filter { it.isDirectory && EVENT_FOLDER.matches(it.name) }
             .orEmpty()
-        val fromStore = videosFromMediaStore(folder)
-        val allVideos = (fromFolder + fromStore).distinctBy { it.absolutePath }
-        log.info(
-            "Папка ${folder.path}: записей ${listed?.size ?: 0}, видео с диска ${fromFolder.size}, из MediaStore ${fromStore.size}"
-        )
-        val ready = allVideos.filter { now - it.lastModified() > SETTLE_MS }
-        val waiting = allVideos.size - ready.size
+            .sortedBy { it.name }
+        log.info("SentryMod: папок ${eventFolders.size} формата дата-время")
         val sent = settings.sentKeys.toMutableSet()
         var uploaded = 0
         var failed = 0
-        ready.forEach { file ->
-            val key = fileKey(file)
-            if (key in sent) {
-                return@forEach
+        var waiting = 0
+        var deletedFolders = 0
+        eventFolders.forEach { eventFolder ->
+            val result = processEventFolder(eventFolder, target, sent)
+            uploaded += result.uploaded
+            failed += result.failed
+            waiting += result.waiting
+            if (result.deleted) {
+                deletedFolders += 1
             }
-            if (file.length() > MAX_TELEGRAM_BYTES) {
-                log.info("Пропуск ${file.name}: больше 49 МБ")
-                sent += key
-                settings.sentKeys = sent
-                return@forEach
-            }
-            log.info("Отправка ${file.name} → ${target.chatId} / ${target.topicId}")
-            val result = sender.sendVideo(
-                settings.botToken,
-                target.chatId,
-                target.topicId,
-                file
-            )
-            result.fold(
-                onSuccess = {
-                    uploaded += 1
-                    sent += key
-                    settings.sentKeys = sent
-                    log.info("Отправлено ${file.name}")
-                    if (settings.deleteAfterSend) {
-                        deleteSentVideo(file)
-                    } else {
-                        log.info("Удаление выключено, ${file.name} оставлен")
-                    }
-                },
-                onFailure = { error ->
-                    failed += 1
-                    log.error("Не отправил ${file.name}", error)
-                }
-            )
         }
+        settings.sentKeys = sent
         log.info(
-            "Скан: видео ${allVideos.size}, ждут записи $waiting, отправлено $uploaded, ошибок $failed, чат ${target.chatId}, топик ${target.topicId.ifBlank { "нет" }}"
+            "Скан: папок ${eventFolders.size}, ждут записи $waiting, отправлено $uploaded, ошибок $failed, удалено папок $deletedFolders, чат ${target.chatId}, топик ${target.topicId.ifBlank { "нет" }}"
         )
+    }
+
+    private data class FolderScanResult(
+        val uploaded: Int,
+        val failed: Int,
+        val waiting: Int,
+        val deleted: Boolean
+    )
+
+    private fun processEventFolder(
+        eventFolder: File,
+        target: TelegramTarget,
+        sent: MutableSet<String>
+    ): FolderScanResult {
+        val now = System.currentTimeMillis()
+        if (!isSettled(eventFolder, now)) {
+            log.info("Папка ${eventFolder.name} ещё пишется, пропуск")
+            return FolderScanResult(0, 0, 1, false)
+        }
+        val fromFolder = eventFolder.listFiles()
+            ?.filter { it.isFile && it.extension.lowercase() in VIDEO_EXTENSIONS }
+            .orEmpty()
+        val fromStore = videosFromMediaStore(eventFolder)
+        val videos = (fromFolder + fromStore).distinctBy { it.absolutePath }
+        if (videos.isEmpty()) {
+            log.info("В ${eventFolder.name} нет видео")
+            return FolderScanResult(0, 0, 0, false)
+        }
+        log.info("Папка ${eventFolder.name}: видео ${videos.size}")
+        var uploaded = 0
+        var failed = 0
+        val partsRoot = File(cacheDir, "sentry_parts")
+        val partCounts = mutableMapOf<String, Int>()
+        videos.forEach { file ->
+            val splitDir = File(partsRoot, "${eventFolder.name}_${file.nameWithoutExtension}")
+            val parts = playableParts(file, splitDir)
+            if (parts.isEmpty()) {
+                failed += 1
+                log.error("Не нарезал ${eventFolder.name}/${file.name} на проигрываемые части")
+                return@forEach
+            }
+            partCounts[file.absolutePath] = parts.size
+            if (parts.size > 1) {
+                log.info("${eventFolder.name}/${file.name}: ${file.length()} байт, частей ${parts.size}")
+            }
+            parts.forEachIndexed { index, part ->
+                val key = partKey(file, index)
+                if (key in sent) {
+                    return@forEachIndexed
+                }
+                val caption = if (parts.size == 1) {
+                    file.name
+                } else {
+                    "${file.name}\nчасть ${index + 1} из ${parts.size}"
+                }
+                val filename = if (parts.size == 1) {
+                    file.name
+                } else {
+                    "${file.nameWithoutExtension}_part${index + 1}of${parts.size}.mp4"
+                }
+                log.info(
+                    "Отправка ${eventFolder.name}/${file.name} часть ${index + 1}/${parts.size} → ${target.chatId} / ${target.topicId}"
+                )
+                val sendResult = sender.sendVideo(
+                    settings.botToken,
+                    target.chatId,
+                    target.topicId,
+                    part,
+                    caption,
+                    filename
+                )
+                sendResult.fold(
+                    onSuccess = {
+                        uploaded += 1
+                        sent += key
+                        settings.sentKeys = sent
+                        log.info("Отправлено ${eventFolder.name}/${file.name} часть ${index + 1}/${parts.size}")
+                    },
+                    onFailure = { error ->
+                        failed += 1
+                        log.error(
+                            "Не отправил ${eventFolder.name}/${file.name} часть ${index + 1}/${parts.size}",
+                            error
+                        )
+                    }
+                )
+                if (sendResult.isFailure) {
+                    return@forEach
+                }
+            }
+        }
+        runCatching { partsRoot.deleteRecursively() }
+        val allSent = videos.all { file ->
+            val count = partCounts[file.absolutePath] ?: return@all false
+            count > 0 && (0 until count).all { index -> partKey(file, index) in sent }
+        }
+        val canDelete = failed == 0 && allSent
+        if (!settings.deleteAfterSend) {
+            log.info("Удаление выключено, папка ${eventFolder.name} оставлена")
+            return FolderScanResult(uploaded, failed, 0, false)
+        }
+        if (!canDelete) {
+            log.info("Папка ${eventFolder.name} не удалена: отправка не завершена")
+            return FolderScanResult(uploaded, failed, 0, false)
+        }
+        val deleted = deleteEventFolder(eventFolder, videos)
+        return FolderScanResult(uploaded, failed, 0, deleted)
+    }
+
+    private fun playableParts(file: File, outDir: File): List<File> {
+        if (file.length() <= TelegramSender.CHUNK_BYTES) {
+            return listOf(file)
+        }
+        return runCatching {
+            VideoPartSplitter.split(file, outDir)
+        }.onFailure { error ->
+            log.error("Нарезка ${file.name}", error)
+        }.getOrDefault(emptyList())
+    }
+
+    private fun isSettled(folder: File, now: Long): Boolean {
+        if (now - folder.lastModified() <= SETTLE_MS) {
+            return false
+        }
+        val children = folder.listFiles() ?: return false
+        return children.all { now - it.lastModified() > SETTLE_MS }
     }
 
     private fun videosFromMediaStore(folder: File): List<File> {
@@ -181,27 +277,31 @@ class SentryScanService : Service() {
         return found.values.toList()
     }
 
-    private fun deleteSentVideo(file: File) {
+    private fun deleteEventFolder(eventFolder: File, videos: List<File>): Boolean {
         if (!Environment.isExternalStorageManager()) {
-            log.error("Не удалил ${file.name}: нет доступа ко всем файлам")
-            return
+            log.error("Не удалил папку ${eventFolder.name}: нет доступа ко всем файлам")
+            return false
         }
-        log.info("Удаляю ${file.name}")
-        if (!file.exists()) {
-            log.info("Файл уже отсутствует: ${file.name}")
-            return
+        log.info("Удаляю папку ${eventFolder.name}")
+        videos.forEach { file ->
+            if (file.exists() && !file.delete()) {
+                deleteViaMediaStore(file)
+            }
         }
-        if (file.delete() && !file.exists()) {
-            log.info("Удалено с диска: ${file.name}")
-            return
+        eventFolder.listFiles()?.forEach { child ->
+            if (child.isFile && !child.delete()) {
+                log.error("Не удалось удалить ${eventFolder.name}/${child.name}")
+            } else if (child.isDirectory) {
+                child.deleteRecursively()
+            }
         }
-        log.info("File.delete не сработал для ${file.name}, пробую MediaStore")
-        val removed = deleteViaMediaStore(file)
-        if (removed || !file.exists()) {
-            log.info("Удалено через MediaStore: ${file.name}")
-        } else {
-            log.error("Не удалось удалить ${file.name}")
+        val gone = !eventFolder.exists() || eventFolder.delete()
+        if (gone || !eventFolder.exists()) {
+            log.info("Удалена папка ${eventFolder.name}")
+            return true
         }
+        log.error("Не удалось удалить папку ${eventFolder.name}")
+        return false
     }
 
     private fun deleteViaMediaStore(file: File): Boolean {
@@ -236,8 +336,8 @@ class SentryScanService : Service() {
         }.getOrNull()
     }
 
-    private fun fileKey(file: File): String {
-        return "${file.absolutePath}|${file.length()}|${file.lastModified()}"
+    private fun partKey(file: File, partIndex: Int): String {
+        return "${file.absolutePath}|${file.length()}|${file.lastModified()}|$partIndex"
     }
 
     private fun createChannel() {
@@ -264,7 +364,7 @@ class SentryScanService : Service() {
         private const val CHANNEL_ID = "sentry_mod_sender"
         private const val NOTIFICATION_ID = 41
         private const val SETTLE_MS = 15_000L
-        private const val MAX_TELEGRAM_BYTES = 49L * 1024L * 1024L
         private val VIDEO_EXTENSIONS = setOf("mp4", "mov", "mkv", "avi", "m4v", "ts")
+        private val EVENT_FOLDER = Regex("""^\d{4}[-_]\d{2}[-_]\d{2}[-_]\d{2}[-_]\d{2}[-_]\d{2}$""")
     }
 }

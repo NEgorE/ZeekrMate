@@ -4,7 +4,7 @@
     <string name="menu_sentry">SentryMod Sender</string>
     <string name="about_missing">Не удалось загрузить About</string>
     <string name="sentry_enabled">Включить отправку</string>
-    <string name="sentry_delete_after_send">Удалять файлы после отправки</string>
+    <string name="sentry_delete_after_send">Удалять папку после отправки</string>
     <string name="sentry_last_scan_never">Последний скан: ещё не было</string>
     <string name="sentry_last_scan">Последний скан: %1$s</string>
     <string name="sentry_download_log">Скачать sentry.log</string>
@@ -30,30 +30,5 @@
     <string name="sentry_notification_channel">SentryMod Sender</string>
     <string name="sentry_notification_title">SentryMod Sender</string>
     <string name="sentry_notification_text">Сканирование папки с видео</string>
-    <string name="about_text" formatted="false"># ZeekrMate
-
-Приложение для центрального экрана Zeekr 7X.
-
-## Автомобиль
-
-- Zeekr 7X
-- Центральный экран: 16 дюймов, 3.5K Mini-LED
-- Ориентация: альбомная
-
-## Версия
-
-%1$s
-
-## Автор
-
-@Esh_ka
-
-## Важно
-
-Неофициальный проект. Не связан с Zeekr и Geely.
-
-## Отказ от ответственности
-
-Приложение предоставляется «как есть». Автор не несёт ответственности за любые последствия использования, включая влияние на работу автомобиля, потерю данных и ущерб. Используйте на свой риск.
-</string>
+    <string name="about_text" formatted="false"># ZeekrMate\n\nПриложение для центрального экрана Zeekr 7X.\n\n## Автомобиль\n\n- Zeekr 7X\n- Центральный экран: 16 дюймов, 3.5K Mini-LED\n- Ориентация: альбомная\n\n## Версия\n\n%1$s\n\n## Автор\n\n@Esh_ka\n\n## Важно\n\nНеофициальный проект. Не связан с Zeekr и Geely.\n\n## Отказ от ответственности\n\nПриложение предоставляется «как есть». Автор не несёт ответственности за любые последствия использования, включая влияние на работу автомобиля, потерю данных и ущерб. Используйте на свой риск.</string>
 </resources>

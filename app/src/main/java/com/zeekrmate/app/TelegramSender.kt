@@ -1,17 +1,44 @@
 package com.zeekrmate.app
 
 import java.io.File
+import java.io.FileInputStream
+import java.io.OutputStream
 import java.net.HttpURLConnection
 import java.net.URL
 
 class TelegramSender {
 
-    fun sendVideo(token: String, chatId: String, topicId: String, file: File): Result<Unit> {
-        val videoResult = postFile(token, chatId, topicId, file, method = "sendVideo", fileField = "video")
+    fun sendVideo(
+        token: String,
+        chatId: String,
+        topicId: String,
+        file: File,
+        caption: String = file.name,
+        filename: String = file.name
+    ): Result<Unit> {
+        val videoResult = postFile(
+            token,
+            chatId,
+            topicId,
+            file,
+            method = "sendVideo",
+            fileField = "video",
+            filename = filename,
+            caption = caption
+        )
         if (videoResult.isSuccess) {
             return videoResult
         }
-        return postFile(token, chatId, topicId, file, method = "sendDocument", fileField = "document")
+        return postFile(
+            token,
+            chatId,
+            topicId,
+            file,
+            method = "sendDocument",
+            fileField = "document",
+            filename = filename,
+            caption = caption
+        )
     }
 
     private fun postFile(
@@ -20,7 +47,9 @@ class TelegramSender {
         topicId: String,
         file: File,
         method: String,
-        fileField: String
+        fileField: String,
+        filename: String,
+        caption: String
     ): Result<Unit> {
         val boundary = "----ZeekrMate${System.currentTimeMillis()}"
         val url = URL("https://api.telegram.org/bot$token/$method")
@@ -28,7 +57,8 @@ class TelegramSender {
             requestMethod = "POST"
             doOutput = true
             connectTimeout = 30_000
-            readTimeout = 180_000
+            readTimeout = 600_000
+            setChunkedStreamingMode(64 * 1024)
             setRequestProperty("Content-Type", "multipart/form-data; boundary=$boundary")
         }
         return try {
@@ -37,8 +67,11 @@ class TelegramSender {
                 if (topicId.isNotBlank()) {
                     writeField(output, boundary, "message_thread_id", topicId)
                 }
-                writeField(output, boundary, "caption", file.name)
-                writeFile(output, boundary, fileField, file)
+                writeField(output, boundary, "caption", caption)
+                if (method == "sendVideo") {
+                    writeField(output, boundary, "supports_streaming", "true")
+                }
+                writeFile(output, boundary, fileField, file, filename)
                 output.write("--$boundary--\r\n".toByteArray())
                 output.flush()
             }
@@ -64,7 +97,7 @@ class TelegramSender {
     }
 
     private fun writeField(
-        output: java.io.OutputStream,
+        output: OutputStream,
         boundary: String,
         name: String,
         value: String
@@ -76,17 +109,31 @@ class TelegramSender {
     }
 
     private fun writeFile(
-        output: java.io.OutputStream,
+        output: OutputStream,
         boundary: String,
         field: String,
-        file: File
+        file: File,
+        filename: String
     ) {
         output.write("--$boundary\r\n".toByteArray())
         output.write(
-            "Content-Disposition: form-data; name=\"$field\"; filename=\"${file.name}\"\r\n".toByteArray()
+            "Content-Disposition: form-data; name=\"$field\"; filename=\"$filename\"\r\n".toByteArray()
         )
-        output.write("Content-Type: application/octet-stream\r\n\r\n".toByteArray())
-        file.inputStream().use { input -> input.copyTo(output) }
+        output.write("Content-Type: video/mp4\r\n\r\n".toByteArray())
+        FileInputStream(file).use { input ->
+            val buffer = ByteArray(64 * 1024)
+            while (true) {
+                val read = input.read(buffer)
+                if (read <= 0) {
+                    break
+                }
+                output.write(buffer, 0, read)
+            }
+        }
         output.write("\r\n".toByteArray())
+    }
+
+    companion object {
+        const val CHUNK_BYTES = 45L * 1024L * 1024L
     }
 }
