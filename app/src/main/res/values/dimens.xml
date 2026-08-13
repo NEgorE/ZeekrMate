@@ -1,0 +1,5 @@
+<resources>
+    <dimen name="readme_body_size">22sp</dimen>
+    <dimen name="readme_h1_size">34sp</dimen>
+    <dimen name="readme_h2_size">26sp</dimen>
+</resources>

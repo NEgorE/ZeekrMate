@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">ZeekrMate</string>
+    <string name="readme_missing">Не удалось загрузить README.md</string>
+</resources>
