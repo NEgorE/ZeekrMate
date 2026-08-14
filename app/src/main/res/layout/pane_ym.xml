@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/ymScroll"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:clipToPadding="false"
+    android:fillViewport="true"
+    android:paddingHorizontal="@dimen/readme_padding_horizontal"
+    android:paddingTop="36dp"
+    android:paddingBottom="48dp"
+    android:scrollbarThumbVertical="@drawable/scrollbar_thumb"
+    android:scrollbars="vertical"
+    android:visibility="visible">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:fontFamily="sans-serif-medium"
+            android:text="@string/ym_title"
+            android:textColor="@color/readme_text"
+            android:textSize="@dimen/readme_h2_size" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:fontFamily="sans-serif"
+            android:text="@string/ym_hint"
+            android:textColor="@color/menu_header_version"
+            android:textSize="@dimen/field_label_size" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="36dp"
+            android:orientation="horizontal">
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/ymCreate"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/edit_field_background"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:fontFamily="sans-serif-medium"
+                    android:gravity="center_vertical|start"
+                    android:minHeight="@dimen/field_min_height"
+                    android:paddingHorizontal="24dp"
+                    android:text="@string/ym_create"
+                    android:textColor="@color/readme_text"
+                    android:textSize="@dimen/field_text_size" />
+
+                <TextView
+                    android:id="@+id/ymStart"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="20dp"
+                    android:background="@drawable/edit_field_background"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:fontFamily="sans-serif-medium"
+                    android:gravity="center_vertical|start"
+                    android:minHeight="@dimen/field_min_height"
+                    android:paddingHorizontal="24dp"
+                    android:text="@string/ym_start"
+                    android:textColor="@color/readme_text"
+                    android:textSize="@dimen/field_text_size" />
+
+                <TextView
+                    android:id="@+id/ymRestart"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="20dp"
+                    android:background="@drawable/edit_field_background"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:fontFamily="sans-serif-medium"
+                    android:gravity="center_vertical|start"
+                    android:minHeight="@dimen/field_min_height"
+                    android:paddingHorizontal="24dp"
+                    android:text="@string/ym_restart"
+                    android:textColor="@color/readme_text"
+                    android:textSize="@dimen/field_text_size" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="24dp"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/ymFileStatus"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="sans-serif"
+                    android:gravity="center_vertical"
+                    android:minHeight="@dimen/field_min_height"
+                    android:text="@string/ym_file_missing"
+                    android:textColor="@color/menu_header_version"
+                    android:textSize="@dimen/field_text_size" />
+
+                <TextView
+                    android:id="@+id/ymRunStatus"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="20dp"
+                    android:fontFamily="sans-serif"
+                    android:gravity="center_vertical"
+                    android:minHeight="@dimen/field_min_height"
+                    android:text="@string/ym_stopped"
+                    android:textColor="@color/menu_header_version"
+                    android:textSize="@dimen/field_text_size" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/ymMessage"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="28dp"
+            android:fontFamily="sans-serif"
+            android:lineSpacingMultiplier="1.2"
+            android:textColor="@color/menu_header_version"
+            android:textSize="@dimen/field_label_size" />
+    </LinearLayout>
+</androidx.core.widget.NestedScrollView>

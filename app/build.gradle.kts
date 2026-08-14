@@ -1,4 +1,4 @@
-﻿plugins {
+plugins {
     id("com.android.application")
 }
 
@@ -10,8 +10,8 @@ android {
         applicationId = "com.zeekrmate.app"
         minSdk = 31
         targetSdk = 36
-        versionCode = 10
-        versionName = "0.1.9"
+        versionCode = 13
+        versionName = "0.2.2"
     }
 
     buildTypes {

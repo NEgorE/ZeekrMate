@@ -34,12 +34,16 @@ import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import java.util.concurrent.Executors
 import kotlin.math.roundToInt
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
     private lateinit var settings: SentrySettings
+    private val ym = YmControl()
+    private val ymExecutor = Executors.newSingleThreadExecutor()
+    private var ymBusy = false
     private var ignoreSwitch = false
     private var onStorageGranted: (() -> Unit)? = null
     private var pendingAllFilesForDelete = false
@@ -47,6 +51,7 @@ class MainActivity : AppCompatActivity() {
     private val statusTicker = object : Runnable {
         override fun run() {
             refreshSentryStatus()
+            refreshYmRunning()
             statusHandler.postDelayed(this, 1_500)
         }
     }
@@ -89,7 +94,9 @@ class MainActivity : AppCompatActivity() {
             getString(R.string.about_text, BuildConfig.VERSION_NAME)
         )
         bindSentryForm()
+        bindYmForm()
         binding.menuSentry.setOnClickListener { showSentry() }
+        binding.menuYm.setOnClickListener { showYm() }
         binding.menuAbout.setOnClickListener { showAbout() }
         showSentry()
         statusHandler.post(statusTicker)
@@ -104,10 +111,14 @@ class MainActivity : AppCompatActivity() {
             finishStorageGrant()
         }
         refreshSentryStatus()
+        if (binding.paneYm.root.visibility == View.VISIBLE) {
+            refreshYmPane(updateFile = true)
+        }
     }
 
     override fun onDestroy() {
         statusHandler.removeCallbacks(statusTicker)
+        ymExecutor.shutdownNow()
         super.onDestroy()
     }
 
@@ -337,19 +348,121 @@ class MainActivity : AppCompatActivity() {
         stopService(Intent(this, SentryScanService::class.java))
     }
 
+    private fun bindYmForm() {
+        val form = binding.paneYm
+        form.ymCreate.setOnClickListener {
+            runYmAction { ym.createScript() }
+        }
+        form.ymStart.setOnClickListener {
+            runYmAction { ym.start() }
+        }
+        form.ymRestart.setOnClickListener {
+            runYmAction { ym.restart() }
+        }
+    }
+
+    private fun runYmAction(action: () -> Any) {
+        if (ymBusy) {
+            return
+        }
+        ymBusy = true
+        setYmButtonsEnabled(false)
+        ymExecutor.execute {
+            val result = runCatching { action() }.getOrNull()
+            val running = ym.isRunning()
+            val fileState = if (result is YmControl.FileAction) {
+                result
+            } else {
+                ym.fileState()
+            }
+            statusHandler.post {
+                ymBusy = false
+                setYmButtonsEnabled(true)
+                applyYmFileStatus(fileState)
+                applyYmRunStatus(running)
+                binding.paneYm.ymMessage.text = ym.lastMessage
+            }
+        }
+    }
+
+    private fun refreshYmPane(updateFile: Boolean) {
+        if (ymBusy) {
+            return
+        }
+        ymExecutor.execute {
+            val fileState = if (updateFile) ym.fileState() else null
+            val running = ym.isRunning()
+            statusHandler.post {
+                if (fileState != null) {
+                    applyYmFileStatus(fileState)
+                }
+                applyYmRunStatus(running)
+            }
+        }
+    }
+
+    private fun refreshYmRunning() {
+        if (!::binding.isInitialized || binding.paneYm.root.visibility != View.VISIBLE) {
+            return
+        }
+        refreshYmPane(updateFile = false)
+    }
+
+    private fun applyYmFileStatus(state: YmControl.FileAction) {
+        binding.paneYm.ymFileStatus.setText(
+            when (state) {
+                YmControl.FileAction.EXISTS -> R.string.ym_file_exists
+                YmControl.FileAction.CREATED -> R.string.ym_file_created
+                YmControl.FileAction.MISSING -> R.string.ym_file_missing
+            }
+        )
+    }
+
+    private fun applyYmRunStatus(running: Boolean) {
+        binding.paneYm.ymRunStatus.setText(
+            if (running) R.string.ym_running else R.string.ym_stopped
+        )
+    }
+
+    private fun setYmButtonsEnabled(enabled: Boolean) {
+        val form = binding.paneYm
+        form.ymCreate.isEnabled = enabled
+        form.ymStart.isEnabled = enabled
+        form.ymRestart.isEnabled = enabled
+        val alpha = if (enabled) 1f else 0.5f
+        form.ymCreate.alpha = alpha
+        form.ymStart.alpha = alpha
+        form.ymRestart.alpha = alpha
+    }
+
     private fun showSentry() {
         persistSentryForm()
         binding.menuSentry.isSelected = true
+        binding.menuYm.isSelected = false
         binding.menuAbout.isSelected = false
         binding.paneSentry.root.visibility = View.VISIBLE
+        binding.paneYm.root.visibility = View.GONE
         binding.paneAbout.root.visibility = View.GONE
+    }
+
+    private fun showYm() {
+        persistSentryForm()
+        binding.menuSentry.isSelected = false
+        binding.menuYm.isSelected = true
+        binding.menuAbout.isSelected = false
+        binding.paneSentry.root.visibility = View.GONE
+        binding.paneYm.root.visibility = View.VISIBLE
+        binding.paneAbout.root.visibility = View.GONE
+        refreshYmPane(updateFile = true)
     }
 
     private fun showAbout() {
         persistSentryForm()
         binding.menuSentry.isSelected = false
+        binding.menuYm.isSelected = false
         binding.menuAbout.isSelected = true
         binding.paneSentry.root.visibility = View.GONE
+        binding.paneYm.root.visibility = View.GONE
         binding.paneAbout.root.visibility = View.VISIBLE
     }
 
