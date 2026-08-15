@@ -18,6 +18,12 @@ class SentrySettings(context: Context) {
             prefs.edit().putBoolean(KEY_DELETE_AFTER_SEND, value).commit()
         }
 
+    var sendLogIfNoVideo: Boolean
+        get() = prefs.getBoolean(KEY_SEND_LOG_IF_NO_VIDEO, false)
+        set(value) {
+            prefs.edit().putBoolean(KEY_SEND_LOG_IF_NO_VIDEO, value).commit()
+        }
+
     var botToken: String
         get() = prefs.getString(KEY_TOKEN, "").orEmpty()
         set(value) {
@@ -69,6 +75,7 @@ class SentrySettings(context: Context) {
         private const val PREFS = "sentry_mod_sender"
         private const val KEY_ENABLED = "enabled"
         private const val KEY_DELETE_AFTER_SEND = "delete_after_send"
+        private const val KEY_SEND_LOG_IF_NO_VIDEO = "send_log_if_no_video"
         private const val KEY_TOKEN = "bot_token"
         private const val KEY_LINK = "telegram_link"
         private const val KEY_FOLDER = "folder"

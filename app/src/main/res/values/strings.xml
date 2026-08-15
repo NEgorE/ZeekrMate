@@ -16,6 +16,7 @@
     <string name="about_missing">Не удалось загрузить About</string>
     <string name="sentry_enabled">Включить отправку</string>
     <string name="sentry_delete_after_send">Удалять папку после отправки</string>
+    <string name="sentry_send_log_if_no_video">Отправлять лог, если нет видео</string>
     <string name="sentry_last_scan_never">Последний скан: ещё не было</string>
     <string name="sentry_last_scan">Последний скан: %1$s</string>
     <string name="sentry_download_log">Скачать sentry.log</string>

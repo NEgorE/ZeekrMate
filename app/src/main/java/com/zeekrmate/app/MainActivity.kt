@@ -131,12 +131,16 @@ class MainActivity : AppCompatActivity() {
         val form = binding.paneSentry
         form.sentryEnabled.isChecked = settings.enabled
         form.sentryDeleteAfterSend.isChecked = settings.deleteAfterSend
+        form.sentrySendLogIfNoVideo.isChecked = settings.sendLogIfNoVideo
         form.sentryBotToken.setText(settings.botToken)
         form.sentryLink.setText(settings.telegramLink)
         form.sentryFolder.setText(settings.folder)
         form.sentryInterval.setText(settings.intervalMinutes.toString())
         refreshSentryStatus()
         form.sentryDownloadLog.setOnClickListener { downloadSentryLog() }
+        form.sentrySendLogIfNoVideo.setOnCheckedChangeListener { _, isChecked ->
+            settings.sendLogIfNoVideo = isChecked
+        }
         form.sentryDeleteAfterSend.setOnCheckedChangeListener { _, isChecked ->
             if (ignoreSwitch) {
                 return@setOnCheckedChangeListener
@@ -191,6 +195,7 @@ class MainActivity : AppCompatActivity() {
             settings.deleteAfterSend = form.sentryDeleteAfterSend.isChecked &&
                 Environment.isExternalStorageManager()
         }
+        settings.sendLogIfNoVideo = form.sentrySendLogIfNoVideo.isChecked
         settings.intervalMinutes = form.sentryInterval.text?.toString()?.toIntOrNull()
             ?: SentrySettings.DEFAULT_INTERVAL_MINUTES
         if (form.sentryInterval.text.isNullOrBlank()) {

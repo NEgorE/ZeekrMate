@@ -70,12 +70,12 @@ class SentryScanService : Service() {
     }
 
     private fun scanOnce() {
-        settings.lastScanAt = System.currentTimeMillis()
         if (!settings.enabled) {
             log.info("Выключено, сервис останавливается")
             stopSelf()
             return
         }
+        settings.lastScanAt = System.currentTimeMillis()
         val folder = File(settings.folder)
         if (!folder.exists()) {
             log.error("Папка не существует: ${folder.path}")
@@ -118,6 +118,15 @@ class SentryScanService : Service() {
         log.info(
             "Скан: папок ${eventFolders.size}, ждут записи $waiting, отправлено $uploaded, ошибок $failed, удалено папок $deletedFolders, чат ${target.chatId}, топик ${target.topicId.ifBlank { "нет" }}"
         )
+        if (settings.sendLogIfNoVideo && uploaded == 0) {
+            val line = settings.lastStatus
+            if (line.isNotBlank()) {
+                sender.sendText(settings.botToken, target.chatId, target.topicId, line).fold(
+                    onSuccess = { log.info("Строка лога отправлена в чат") },
+                    onFailure = { error -> log.error("Не отправил строку лога", error) }
+                )
+            }
+        }
     }
 
     private data class FolderScanResult(

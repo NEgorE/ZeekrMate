@@ -5,6 +5,7 @@ import java.io.FileInputStream
 import java.io.OutputStream
 import java.net.HttpURLConnection
 import java.net.URL
+import java.net.URLEncoder
 
 class TelegramSender {
 
@@ -39,6 +40,53 @@ class TelegramSender {
             filename = filename,
             caption = caption
         )
+    }
+
+    fun sendText(
+        token: String,
+        chatId: String,
+        topicId: String,
+        text: String
+    ): Result<Unit> {
+        val query = buildString {
+            append("chat_id=").append(URLEncoder.encode(chatId, Charsets.UTF_8.name()))
+            append("&text=").append(URLEncoder.encode(text, Charsets.UTF_8.name()))
+            if (topicId.isNotBlank()) {
+                append("&message_thread_id=")
+                    .append(URLEncoder.encode(topicId, Charsets.UTF_8.name()))
+            }
+        }
+        val url = URL("https://api.telegram.org/bot$token/sendMessage")
+        val connection = (url.openConnection() as HttpURLConnection).apply {
+            requestMethod = "POST"
+            doOutput = true
+            connectTimeout = 30_000
+            readTimeout = 30_000
+            setRequestProperty("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8")
+        }
+        return try {
+            connection.outputStream.use { output ->
+                output.write(query.toByteArray(Charsets.UTF_8))
+            }
+            val code = connection.responseCode
+            val body = (if (code in 200..299) connection.inputStream else connection.errorStream)
+                .bufferedReader()
+                .use { it.readText() }
+            if (code in 200..299 && body.contains("\"ok\":true")) {
+                Result.success(Unit)
+            } else {
+                val description = Regex("\"description\"\\s*:\\s*\"([^\"]+)\"")
+                    .find(body)
+                    ?.groupValues
+                    ?.get(1)
+                    ?: body.take(180)
+                Result.failure(IllegalStateException("Telegram sendMessage HTTP $code: $description"))
+            }
+        } catch (error: Exception) {
+            Result.failure(error)
+        } finally {
+            connection.disconnect()
+        }
     }
 
     private fun postFile(

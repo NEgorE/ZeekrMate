@@ -65,6 +65,31 @@
                 android:trackTint="@color/line" />
         </LinearLayout>
 
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:gravity="center_vertical"
+            android:minHeight="@dimen/field_min_height"
+            android:orientation="horizontal">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="sans-serif-medium"
+                android:text="@string/sentry_send_log_if_no_video"
+                android:textColor="@color/readme_text"
+                android:textSize="@dimen/field_text_size" />
+
+            <androidx.appcompat.widget.SwitchCompat
+                android:id="@+id/sentrySendLogIfNoVideo"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:thumbTint="@color/line"
+                android:trackTint="@color/line" />
+        </LinearLayout>
+
         <TextView
             android:id="@+id/sentryLastScan"
             android:layout_width="match_parent"
