@@ -215,20 +215,45 @@
             android:textColor="@color/menu_header_version"
             android:textSize="@dimen/field_label_size" />
 
-        <TextView
-            android:id="@+id/sentryDownloadLog"
-            android:layout_width="wrap_content"
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="32dp"
-            android:background="@drawable/edit_field_background"
-            android:clickable="true"
-            android:focusable="true"
-            android:fontFamily="sans-serif-medium"
-            android:gravity="center"
-            android:minHeight="@dimen/field_min_height"
-            android:paddingHorizontal="24dp"
-            android:text="@string/sentry_download_log"
-            android:textColor="@color/readme_text"
-            android:textSize="@dimen/field_text_size" />
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/sentryDownloadLog"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:background="@drawable/edit_field_background"
+                android:clickable="true"
+                android:focusable="true"
+                android:fontFamily="sans-serif-medium"
+                android:gravity="center"
+                android:minHeight="@dimen/field_min_height"
+                android:paddingHorizontal="16dp"
+                android:text="@string/sentry_download_log"
+                android:textColor="@color/readme_text"
+                android:textSize="@dimen/field_text_size" />
+
+            <TextView
+                android:id="@+id/sentrySendLog"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:layout_weight="1"
+                android:background="@drawable/edit_field_background"
+                android:clickable="true"
+                android:focusable="true"
+                android:fontFamily="sans-serif-medium"
+                android:gravity="center"
+                android:minHeight="@dimen/field_min_height"
+                android:paddingHorizontal="16dp"
+                android:text="@string/sentry_send_log"
+                android:textColor="@color/readme_text"
+                android:textSize="@dimen/field_text_size" />
+        </LinearLayout>
     </LinearLayout>
 </androidx.core.widget.NestedScrollView>

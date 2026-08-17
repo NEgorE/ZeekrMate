@@ -11,4 +11,6 @@
     <color name="menu_header_version">#8A94A0</color>
     <color name="field_fill">#121820</color>
     <color name="field_hint">#8A94A0</color>
+    <color name="ym_ok">#5CDB95</color>
+    <color name="ym_error">#FF6B6B</color>
 </resources>

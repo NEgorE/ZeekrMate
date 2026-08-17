@@ -24,6 +24,7 @@ import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
+import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
@@ -41,9 +42,11 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
     private lateinit var settings: SentrySettings
-    private val ym = YmControl()
+    private lateinit var ymSettings: YmSettings
+    private val ym by lazy { YmControl(this) }
     private val ymExecutor = Executors.newSingleThreadExecutor()
     private var ymBusy = false
+    private val ymNoticeClear = mutableMapOf<TextView, Runnable>()
     private var ignoreSwitch = false
     private var onStorageGranted: (() -> Unit)? = null
     private var pendingAllFilesForDelete = false
@@ -88,6 +91,7 @@ class MainActivity : AppCompatActivity() {
         window.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
         applyTransparentScreenInsets()
         settings = SentrySettings(this)
+        ymSettings = YmSettings(this)
         binding.appVersion.text = BuildConfig.VERSION_NAME
         binding.paneAbout.readmeText.movementMethod = LinkMovementMethod.getInstance()
         binding.paneAbout.readmeText.text = formatReadme(
@@ -112,12 +116,13 @@ class MainActivity : AppCompatActivity() {
         }
         refreshSentryStatus()
         if (binding.paneYm.root.visibility == View.VISIBLE) {
-            refreshYmPane(updateFile = true)
+            refreshYmPane()
         }
     }
 
     override fun onDestroy() {
         statusHandler.removeCallbacks(statusTicker)
+        ymNoticeClear.values.forEach { statusHandler.removeCallbacks(it) }
         ymExecutor.shutdownNow()
         super.onDestroy()
     }
@@ -125,6 +130,7 @@ class MainActivity : AppCompatActivity() {
     override fun onPause() {
         super.onPause()
         persistSentryForm()
+        persistYmForm()
     }
 
     private fun bindSentryForm() {
@@ -138,6 +144,7 @@ class MainActivity : AppCompatActivity() {
         form.sentryInterval.setText(settings.intervalMinutes.toString())
         refreshSentryStatus()
         form.sentryDownloadLog.setOnClickListener { downloadSentryLog() }
+        form.sentrySendLog.setOnClickListener { sendSentryLogToTelegram() }
         form.sentrySendLogIfNoVideo.setOnCheckedChangeListener { _, isChecked ->
             settings.sendLogIfNoVideo = isChecked
         }
@@ -250,6 +257,51 @@ class MainActivity : AppCompatActivity() {
         refreshSentryStatus()
     }
 
+    private fun sendSentryLogToTelegram() {
+        persistSentryForm()
+        if (settings.botToken.isBlank() || TelegramLink.parse(settings.telegramLink) == null) {
+            settings.lastStatus = getString(R.string.sentry_log_send_need_fields)
+            refreshSentryStatus()
+            return
+        }
+        val log = SentryLog(this)
+        val lines = log.lastLines(1000)
+        if (lines.isEmpty()) {
+            settings.lastStatus = getString(R.string.sentry_log_missing)
+            refreshSentryStatus()
+            return
+        }
+        val target = TelegramLink.parse(settings.telegramLink) ?: return
+        val token = settings.botToken
+        binding.paneSentry.sentrySendLog.isEnabled = false
+        Thread {
+            val out = File(cacheDir, "sentry_last1000.log")
+            val sent = runCatching {
+                out.writeText(lines.joinToString("\n", postfix = "\n"))
+                TelegramSender().sendDocument(
+                    token,
+                    target.chatId,
+                    target.topicId,
+                    out,
+                    filename = "sentry_last1000.log",
+                    caption = "sentry_last1000.log (${lines.size})"
+                )
+            }.getOrElse { Result.failure(it) }
+            out.delete()
+            val failed = sent.exceptionOrNull()?.message?.take(90)
+            statusHandler.post {
+                binding.paneSentry.sentrySendLog.isEnabled = true
+                settings.lastStatus = if (sent.isSuccess) {
+                    getString(R.string.sentry_log_sent, lines.size)
+                } else {
+                    getString(R.string.sentry_log_send_failed) +
+                        (failed?.let { ": $it" } ?: "")
+                }
+                refreshSentryStatus()
+            }
+        }.start()
+    }
+
     private fun startSentryService() {
         ContextCompat.startForegroundService(
             this,
@@ -355,52 +407,69 @@ class MainActivity : AppCompatActivity() {
 
     private fun bindYmForm() {
         val form = binding.paneYm
-        form.ymCreate.setOnClickListener {
-            runYmAction { ym.createScript() }
-        }
+        form.ymLink.setText(ymSettings.telegramLink)
         form.ymStart.setOnClickListener {
-            runYmAction { ym.start() }
+            runYmAction(form.ymStartNotice) { ym.start() }
         }
         form.ymRestart.setOnClickListener {
-            runYmAction { ym.restart() }
+            runYmAction(form.ymRestartNotice) { ym.restart() }
+        }
+        form.ymStop.setOnClickListener {
+            runYmAction(form.ymStopNotice) { ym.stop() }
+        }
+        form.ymSendLog.setOnClickListener {
+            persistYmForm()
+            runYmAction(form.ymSendNotice) {
+                ym.sendLastLog(settings.botToken, ymSettings.telegramLink)
+            }
         }
     }
 
-    private fun runYmAction(action: () -> Any) {
+    private fun persistYmForm() {
+        if (!::binding.isInitialized || !::ymSettings.isInitialized) {
+            return
+        }
+        ymSettings.telegramLink = binding.paneYm.ymLink.text?.toString().orEmpty()
+    }
+
+    private fun runYmAction(notice: TextView, action: () -> YmControl.YmOutcome) {
         if (ymBusy) {
             return
         }
         ymBusy = true
         setYmButtonsEnabled(false)
         ymExecutor.execute {
-            val result = runCatching { action() }.getOrNull()
-            val running = ym.isRunning()
-            val fileState = if (result is YmControl.FileAction) {
-                result
-            } else {
-                ym.fileState()
+            val outcome = runCatching { action() }.getOrElse { error ->
+                YmControl.YmOutcome(false, error.message?.take(90) ?: "Сбой")
             }
+            val running = ym.isRunning()
             statusHandler.post {
                 ymBusy = false
                 setYmButtonsEnabled(true)
-                applyYmFileStatus(fileState)
                 applyYmRunStatus(running)
-                binding.paneYm.ymMessage.text = ym.lastMessage
+                showYmNotice(notice, outcome)
             }
         }
     }
 
-    private fun refreshYmPane(updateFile: Boolean) {
+    private fun showYmNotice(view: TextView, outcome: YmControl.YmOutcome) {
+        view.text = outcome.message
+        view.setTextColor(
+            ContextCompat.getColor(this, if (outcome.success) R.color.ym_ok else R.color.ym_error)
+        )
+        ymNoticeClear.remove(view)?.let { statusHandler.removeCallbacks(it) }
+        val clear = Runnable { view.text = "" }
+        ymNoticeClear[view] = clear
+        statusHandler.postDelayed(clear, 20_000)
+    }
+
+    private fun refreshYmPane() {
         if (ymBusy) {
             return
         }
         ymExecutor.execute {
-            val fileState = if (updateFile) ym.fileState() else null
             val running = ym.isRunning()
             statusHandler.post {
-                if (fileState != null) {
-                    applyYmFileStatus(fileState)
-                }
                 applyYmRunStatus(running)
             }
         }
@@ -410,38 +479,34 @@ class MainActivity : AppCompatActivity() {
         if (!::binding.isInitialized || binding.paneYm.root.visibility != View.VISIBLE) {
             return
         }
-        refreshYmPane(updateFile = false)
-    }
-
-    private fun applyYmFileStatus(state: YmControl.FileAction) {
-        binding.paneYm.ymFileStatus.setText(
-            when (state) {
-                YmControl.FileAction.EXISTS -> R.string.ym_file_exists
-                YmControl.FileAction.CREATED -> R.string.ym_file_created
-                YmControl.FileAction.MISSING -> R.string.ym_file_missing
-            }
-        )
+        refreshYmPane()
     }
 
     private fun applyYmRunStatus(running: Boolean) {
         binding.paneYm.ymRunStatus.setText(
             if (running) R.string.ym_running else R.string.ym_stopped
         )
+        binding.paneYm.ymRunStatus.setTextColor(
+            ContextCompat.getColor(this, if (running) R.color.ym_ok else R.color.ym_error)
+        )
     }
 
     private fun setYmButtonsEnabled(enabled: Boolean) {
         val form = binding.paneYm
-        form.ymCreate.isEnabled = enabled
         form.ymStart.isEnabled = enabled
         form.ymRestart.isEnabled = enabled
+        form.ymStop.isEnabled = enabled
+        form.ymSendLog.isEnabled = enabled
         val alpha = if (enabled) 1f else 0.5f
-        form.ymCreate.alpha = alpha
         form.ymStart.alpha = alpha
         form.ymRestart.alpha = alpha
+        form.ymStop.alpha = alpha
+        form.ymSendLog.alpha = alpha
     }
 
     private fun showSentry() {
         persistSentryForm()
+        persistYmForm()
         binding.menuSentry.isSelected = true
         binding.menuYm.isSelected = false
         binding.menuAbout.isSelected = false
@@ -452,17 +517,19 @@ class MainActivity : AppCompatActivity() {
 
     private fun showYm() {
         persistSentryForm()
+        persistYmForm()
         binding.menuSentry.isSelected = false
         binding.menuYm.isSelected = true
         binding.menuAbout.isSelected = false
         binding.paneSentry.root.visibility = View.GONE
         binding.paneYm.root.visibility = View.VISIBLE
         binding.paneAbout.root.visibility = View.GONE
-        refreshYmPane(updateFile = true)
+        refreshYmPane()
     }
 
     private fun showAbout() {
         persistSentryForm()
+        persistYmForm()
         binding.menuSentry.isSelected = false
         binding.menuYm.isSelected = false
         binding.menuAbout.isSelected = true

@@ -25,7 +25,8 @@ class TelegramSender {
             method = "sendVideo",
             fileField = "video",
             filename = filename,
-            caption = caption
+            caption = caption,
+            mimeType = "video/mp4"
         )
         if (videoResult.isSuccess) {
             return videoResult
@@ -38,7 +39,29 @@ class TelegramSender {
             method = "sendDocument",
             fileField = "document",
             filename = filename,
-            caption = caption
+            caption = caption,
+            mimeType = "video/mp4"
+        )
+    }
+
+    fun sendDocument(
+        token: String,
+        chatId: String,
+        topicId: String,
+        file: File,
+        filename: String = file.name,
+        caption: String = filename
+    ): Result<Unit> {
+        return postFile(
+            token,
+            chatId,
+            topicId,
+            file,
+            method = "sendDocument",
+            fileField = "document",
+            filename = filename,
+            caption = caption,
+            mimeType = "text/plain"
         )
     }
 
@@ -97,7 +120,8 @@ class TelegramSender {
         method: String,
         fileField: String,
         filename: String,
-        caption: String
+        caption: String,
+        mimeType: String
     ): Result<Unit> {
         val boundary = "----ZeekrMate${System.currentTimeMillis()}"
         val url = URL("https://api.telegram.org/bot$token/$method")
@@ -119,7 +143,7 @@ class TelegramSender {
                 if (method == "sendVideo") {
                     writeField(output, boundary, "supports_streaming", "true")
                 }
-                writeFile(output, boundary, fileField, file, filename)
+                writeFile(output, boundary, fileField, file, filename, mimeType)
                 output.write("--$boundary--\r\n".toByteArray())
                 output.flush()
             }
@@ -161,13 +185,14 @@ class TelegramSender {
         boundary: String,
         field: String,
         file: File,
-        filename: String
+        filename: String,
+        mimeType: String
     ) {
         output.write("--$boundary\r\n".toByteArray())
         output.write(
             "Content-Disposition: form-data; name=\"$field\"; filename=\"$filename\"\r\n".toByteArray()
         )
-        output.write("Content-Type: video/mp4\r\n\r\n".toByteArray())
+        output.write("Content-Type: $mimeType\r\n\r\n".toByteArray())
         FileInputStream(file).use { input ->
             val buffer = ByteArray(64 * 1024)
             while (true) {

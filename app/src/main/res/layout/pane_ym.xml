@@ -26,6 +26,16 @@
             android:textSize="@dimen/readme_h2_size" />
 
         <TextView
+            android:id="@+id/ymRunStatus"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:fontFamily="sans-serif-medium"
+            android:text="@string/ym_stopped"
+            android:textColor="@color/ym_error"
+            android:textSize="@dimen/field_text_size" />
+
+        <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
@@ -37,58 +47,39 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="36dp"
+            android:layout_marginTop="28dp"
+            android:gravity="bottom"
             android:orientation="horizontal">
 
             <LinearLayout
-                android:layout_width="wrap_content"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
+                android:layout_weight="1"
                 android:orientation="vertical">
 
                 <TextView
-                    android:id="@+id/ymCreate"
+                    android:id="@+id/ymStartNotice"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:background="@drawable/edit_field_background"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:fontFamily="sans-serif-medium"
-                    android:gravity="center_vertical|start"
-                    android:minHeight="@dimen/field_min_height"
-                    android:paddingHorizontal="24dp"
-                    android:text="@string/ym_create"
-                    android:textColor="@color/readme_text"
-                    android:textSize="@dimen/field_text_size" />
+                    android:ellipsize="end"
+                    android:fontFamily="sans-serif"
+                    android:maxLines="2"
+                    android:minHeight="20dp"
+                    android:textSize="@dimen/ym_notice_size" />
 
                 <TextView
                     android:id="@+id/ymStart"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="20dp"
+                    android:layout_marginTop="4dp"
                     android:background="@drawable/edit_field_background"
                     android:clickable="true"
                     android:focusable="true"
                     android:fontFamily="sans-serif-medium"
-                    android:gravity="center_vertical|start"
+                    android:gravity="center"
                     android:minHeight="@dimen/field_min_height"
-                    android:paddingHorizontal="24dp"
+                    android:paddingHorizontal="16dp"
                     android:text="@string/ym_start"
-                    android:textColor="@color/readme_text"
-                    android:textSize="@dimen/field_text_size" />
-
-                <TextView
-                    android:id="@+id/ymRestart"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="20dp"
-                    android:background="@drawable/edit_field_background"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:fontFamily="sans-serif-medium"
-                    android:gravity="center_vertical|start"
-                    android:minHeight="@dimen/field_min_height"
-                    android:paddingHorizontal="24dp"
-                    android:text="@string/ym_restart"
                     android:textColor="@color/readme_text"
                     android:textSize="@dimen/field_text_size" />
             </LinearLayout>
@@ -96,43 +87,125 @@
             <LinearLayout
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="24dp"
+                android:layout_marginStart="16dp"
                 android:layout_weight="1"
                 android:orientation="vertical">
 
                 <TextView
-                    android:id="@+id/ymFileStatus"
+                    android:id="@+id/ymRestartNotice"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:ellipsize="end"
                     android:fontFamily="sans-serif"
-                    android:gravity="center_vertical"
-                    android:minHeight="@dimen/field_min_height"
-                    android:text="@string/ym_file_missing"
-                    android:textColor="@color/menu_header_version"
-                    android:textSize="@dimen/field_text_size" />
+                    android:maxLines="2"
+                    android:minHeight="20dp"
+                    android:textSize="@dimen/ym_notice_size" />
 
                 <TextView
-                    android:id="@+id/ymRunStatus"
+                    android:id="@+id/ymRestart"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="20dp"
-                    android:fontFamily="sans-serif"
-                    android:gravity="center_vertical"
+                    android:layout_marginTop="4dp"
+                    android:background="@drawable/edit_field_background"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:fontFamily="sans-serif-medium"
+                    android:gravity="center"
                     android:minHeight="@dimen/field_min_height"
-                    android:text="@string/ym_stopped"
-                    android:textColor="@color/menu_header_version"
+                    android:paddingHorizontal="16dp"
+                    android:text="@string/ym_restart"
+                    android:textColor="@color/readme_text"
                     android:textSize="@dimen/field_text_size" />
             </LinearLayout>
         </LinearLayout>
 
         <TextView
-            android:id="@+id/ymMessage"
+            android:id="@+id/ymStopNotice"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="28dp"
+            android:layout_marginTop="16dp"
+            android:ellipsize="end"
             android:fontFamily="sans-serif"
-            android:lineSpacingMultiplier="1.2"
+            android:maxLines="2"
+            android:minHeight="20dp"
+            android:textSize="@dimen/ym_notice_size" />
+
+        <TextView
+            android:id="@+id/ymStop"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:background="@drawable/edit_field_background"
+            android:clickable="true"
+            android:focusable="true"
+            android:fontFamily="sans-serif-medium"
+            android:gravity="center_vertical|start"
+            android:minHeight="@dimen/field_min_height"
+            android:paddingHorizontal="24dp"
+            android:text="@string/ym_stop"
+            android:textColor="@color/readme_text"
+            android:textSize="@dimen/field_text_size" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="36dp"
+            android:fontFamily="sans-serif-medium"
+            android:text="@string/ym_link"
+            android:textColor="@color/line"
+            android:textSize="@dimen/field_label_size" />
+
+        <EditText
+            android:id="@+id/ymLink"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:autofillHints="username"
+            android:background="@drawable/edit_field_background"
+            android:fontFamily="sans-serif"
+            android:hint="@string/ym_link_hint"
+            android:importantForAutofill="no"
+            android:inputType="textUri"
+            android:minHeight="@dimen/field_min_height"
+            android:paddingHorizontal="16dp"
+            android:textColor="@color/readme_text"
+            android:textColorHint="@color/field_hint"
+            android:textSize="@dimen/field_text_size" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:fontFamily="sans-serif"
+            android:text="@string/ym_send_hint"
             android:textColor="@color/menu_header_version"
             android:textSize="@dimen/field_label_size" />
+
+        <TextView
+            android:id="@+id/ymSendNotice"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:ellipsize="end"
+            android:fontFamily="sans-serif"
+            android:maxLines="2"
+            android:minHeight="20dp"
+            android:textSize="@dimen/ym_notice_size" />
+
+        <TextView
+            android:id="@+id/ymSendLog"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:background="@drawable/edit_field_background"
+            android:clickable="true"
+            android:focusable="true"
+            android:fontFamily="sans-serif-medium"
+            android:gravity="center_vertical|start"
+            android:minHeight="@dimen/field_min_height"
+            android:paddingHorizontal="24dp"
+            android:text="@string/ym_send_log"
+            android:textColor="@color/readme_text"
+            android:textSize="@dimen/field_text_size" />
     </LinearLayout>
 </androidx.core.widget.NestedScrollView>
