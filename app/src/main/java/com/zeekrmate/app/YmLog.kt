@@ -7,11 +7,9 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-class SentryLog(context: Context) {
+class YmLog(context: Context) {
 
-    private val appContext = context.applicationContext
-    private val settings = SentrySettings(appContext)
-    private val file = File(appContext.filesDir, FILE_NAME)
+    private val file = File(context.applicationContext.filesDir, FILE_NAME)
     private val time = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
 
     fun info(message: String) {
@@ -39,7 +37,6 @@ class SentryLog(context: Context) {
         } else {
             Log.i(TAG, message)
         }
-        settings.lastStatus = line
         runCatching {
             file.appendText(line + "\n")
             if (file.length() > MAX_BYTES) {
@@ -50,8 +47,8 @@ class SentryLog(context: Context) {
     }
 
     companion object {
-        const val TAG = "ZeekrMate"
-        const val FILE_NAME = "sentry.log"
+        const val TAG = "ZeekrMateYM"
+        const val FILE_NAME = "ym.log"
         private const val MAX_BYTES = 80_000L
     }
 }

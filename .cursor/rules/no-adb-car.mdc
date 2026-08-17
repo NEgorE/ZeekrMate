@@ -1,0 +1,17 @@
+---
+description: Never connect to the car over ADB unless the user explicitly asks.
+alwaysApply: true
+---
+
+# ADB к машине
+
+Не подключаться к автомобилю по ADB самостоятельно.
+
+Запрещено без прямой просьбы пользователя:
+
+- `adb devices`, `adb install`, `adb uninstall`, `adb push`, `adb pull`, `adb shell`
+- любые другие команды ADB к Zeekr / DHU
+
+Можно только объяснить команду текстом, чтобы пользователь выполнил её сам.
+
+Исключение: пользователь явно написал «поставь по adb», «подключись по adb» или аналогично.

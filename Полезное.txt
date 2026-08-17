@@ -1,0 +1,31 @@
+ 
+Команды:
+ - вывод всех установленных проограмм:
+  adb shell pm list packages -3
+
+ - выдача прав на установку:
+  adb shell appops set org.telegram.messenger.web REQUEST_INSTALL_PACKAGES allow
+
+ - выдача доступа к файлам
+  adb shell pm grant com.zeekrmate.app android.permission.READ_EXTERNAL_STORAGE
+  adb shell pm grant com.zeekrmate.app android.permission.WRITE_EXTERNAL_STORAGE
+  adb shell pm grant com.zeekrmate.app android.permission.READ_MEDIA_IMAGES
+  adb shell pm grant com.zeekrmate.app android.permission.READ_MEDIA_VIDEO
+  adb shell pm grant com.zeekrmate.app android.permission.READ_MEDIA_AUDIO
+  adb shell pm grant com.zeekrmate.app android.permission.ACCESS_MEDIA_LOCATION
+  adb shell pm grant com.zeekrmate.app android.permission.READ_MEDIA_VISUAL_USER_SELECTED
+
+  adb shell appops set --uid com.zeekrmate.app MANAGE_EXTERNAL_STORAGE allow
+  adb shell appops set com.zeekrmate.app MANAGE_EXTERNAL_STORAGE allow
+  adb shell appops set com.zeekrmate.app WRITE_EXTERNAL_STORAGE allow
+  adb shell appops set com.zeekrmate.app READ_EXTERNAL_STORAGE allow
+  adb shell appops set com.zeekrmate.app LEGACY_STORAGE allow
+  adb shell appops set com.zeekrmate.app NO_ISOLATED_STORAGE allow
+
+  adb shell appops set com.zeekrmate.app AUTO_REVOKE_PERMISSIONS_IF_UNUSED ignore
+
+  adb shell pm grant com.zeekrmate.app android.permission.READ_LOGS
+
+  adb shell am force-stop com.zeekrmate.app
+  adb shell monkey -p com.zeekrmate.app -c android.intent.category.LAUNCHER 1
+  

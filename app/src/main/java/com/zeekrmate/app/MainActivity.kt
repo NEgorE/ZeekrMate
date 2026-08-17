@@ -24,6 +24,7 @@ import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
+import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
@@ -34,12 +35,18 @@ import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import java.util.concurrent.Executors
 import kotlin.math.roundToInt
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
     private lateinit var settings: SentrySettings
+    private lateinit var ymSettings: YmSettings
+    private val ym by lazy { YmControl(this) }
+    private val ymExecutor = Executors.newSingleThreadExecutor()
+    private var ymBusy = false
+    private val ymNoticeClear = mutableMapOf<TextView, Runnable>()
     private var ignoreSwitch = false
     private var onStorageGranted: (() -> Unit)? = null
     private var pendingAllFilesForDelete = false
@@ -47,6 +54,7 @@ class MainActivity : AppCompatActivity() {
     private val statusTicker = object : Runnable {
         override fun run() {
             refreshSentryStatus()
+            refreshYmRunning()
             statusHandler.postDelayed(this, 1_500)
         }
     }
@@ -83,13 +91,16 @@ class MainActivity : AppCompatActivity() {
         window.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
         applyTransparentScreenInsets()
         settings = SentrySettings(this)
+        ymSettings = YmSettings(this)
         binding.appVersion.text = BuildConfig.VERSION_NAME
         binding.paneAbout.readmeText.movementMethod = LinkMovementMethod.getInstance()
         binding.paneAbout.readmeText.text = formatReadme(
             getString(R.string.about_text, BuildConfig.VERSION_NAME)
         )
         bindSentryForm()
+        bindYmForm()
         binding.menuSentry.setOnClickListener { showSentry() }
+        binding.menuYm.setOnClickListener { showYm() }
         binding.menuAbout.setOnClickListener { showAbout() }
         showSentry()
         statusHandler.post(statusTicker)
@@ -104,28 +115,39 @@ class MainActivity : AppCompatActivity() {
             finishStorageGrant()
         }
         refreshSentryStatus()
+        if (binding.paneYm.root.visibility == View.VISIBLE) {
+            refreshYmPane()
+        }
     }
 
     override fun onDestroy() {
         statusHandler.removeCallbacks(statusTicker)
+        ymNoticeClear.values.forEach { statusHandler.removeCallbacks(it) }
+        ymExecutor.shutdownNow()
         super.onDestroy()
     }
 
     override fun onPause() {
         super.onPause()
         persistSentryForm()
+        persistYmForm()
     }
 
     private fun bindSentryForm() {
         val form = binding.paneSentry
         form.sentryEnabled.isChecked = settings.enabled
         form.sentryDeleteAfterSend.isChecked = settings.deleteAfterSend
+        form.sentrySendLogIfNoVideo.isChecked = settings.sendLogIfNoVideo
         form.sentryBotToken.setText(settings.botToken)
         form.sentryLink.setText(settings.telegramLink)
         form.sentryFolder.setText(settings.folder)
         form.sentryInterval.setText(settings.intervalMinutes.toString())
         refreshSentryStatus()
         form.sentryDownloadLog.setOnClickListener { downloadSentryLog() }
+        form.sentrySendLog.setOnClickListener { sendSentryLogToTelegram() }
+        form.sentrySendLogIfNoVideo.setOnCheckedChangeListener { _, isChecked ->
+            settings.sendLogIfNoVideo = isChecked
+        }
         form.sentryDeleteAfterSend.setOnCheckedChangeListener { _, isChecked ->
             if (ignoreSwitch) {
                 return@setOnCheckedChangeListener
@@ -180,6 +202,7 @@ class MainActivity : AppCompatActivity() {
             settings.deleteAfterSend = form.sentryDeleteAfterSend.isChecked &&
                 Environment.isExternalStorageManager()
         }
+        settings.sendLogIfNoVideo = form.sentrySendLogIfNoVideo.isChecked
         settings.intervalMinutes = form.sentryInterval.text?.toString()?.toIntOrNull()
             ?: SentrySettings.DEFAULT_INTERVAL_MINUTES
         if (form.sentryInterval.text.isNullOrBlank()) {
@@ -232,6 +255,51 @@ class MainActivity : AppCompatActivity() {
             if (saved) R.string.sentry_log_saved else R.string.sentry_log_failed
         )
         refreshSentryStatus()
+    }
+
+    private fun sendSentryLogToTelegram() {
+        persistSentryForm()
+        if (settings.botToken.isBlank() || TelegramLink.parse(settings.telegramLink) == null) {
+            settings.lastStatus = getString(R.string.sentry_log_send_need_fields)
+            refreshSentryStatus()
+            return
+        }
+        val log = SentryLog(this)
+        val lines = log.lastLines(1000)
+        if (lines.isEmpty()) {
+            settings.lastStatus = getString(R.string.sentry_log_missing)
+            refreshSentryStatus()
+            return
+        }
+        val target = TelegramLink.parse(settings.telegramLink) ?: return
+        val token = settings.botToken
+        binding.paneSentry.sentrySendLog.isEnabled = false
+        Thread {
+            val out = File(cacheDir, "sentry_last1000.log")
+            val sent = runCatching {
+                out.writeText(lines.joinToString("\n", postfix = "\n"))
+                TelegramSender().sendDocument(
+                    token,
+                    target.chatId,
+                    target.topicId,
+                    out,
+                    filename = "sentry_last1000.log",
+                    caption = "sentry_last1000.log (${lines.size})"
+                )
+            }.getOrElse { Result.failure(it) }
+            out.delete()
+            val failed = sent.exceptionOrNull()?.message?.take(90)
+            statusHandler.post {
+                binding.paneSentry.sentrySendLog.isEnabled = true
+                settings.lastStatus = if (sent.isSuccess) {
+                    getString(R.string.sentry_log_sent, lines.size)
+                } else {
+                    getString(R.string.sentry_log_send_failed) +
+                        (failed?.let { ": $it" } ?: "")
+                }
+                refreshSentryStatus()
+            }
+        }.start()
     }
 
     private fun startSentryService() {
@@ -337,19 +405,136 @@ class MainActivity : AppCompatActivity() {
         stopService(Intent(this, SentryScanService::class.java))
     }
 
+    private fun bindYmForm() {
+        val form = binding.paneYm
+        form.ymLink.setText(ymSettings.telegramLink)
+        form.ymStart.setOnClickListener {
+            runYmAction(form.ymStartNotice) { ym.start() }
+        }
+        form.ymRestart.setOnClickListener {
+            runYmAction(form.ymRestartNotice) { ym.restart() }
+        }
+        form.ymStop.setOnClickListener {
+            runYmAction(form.ymStopNotice) { ym.stop() }
+        }
+        form.ymSendLog.setOnClickListener {
+            persistYmForm()
+            runYmAction(form.ymSendNotice) {
+                ym.sendLastLog(settings.botToken, ymSettings.telegramLink)
+            }
+        }
+    }
+
+    private fun persistYmForm() {
+        if (!::binding.isInitialized || !::ymSettings.isInitialized) {
+            return
+        }
+        ymSettings.telegramLink = binding.paneYm.ymLink.text?.toString().orEmpty()
+    }
+
+    private fun runYmAction(notice: TextView, action: () -> YmControl.YmOutcome) {
+        if (ymBusy) {
+            return
+        }
+        ymBusy = true
+        setYmButtonsEnabled(false)
+        ymExecutor.execute {
+            val outcome = runCatching { action() }.getOrElse { error ->
+                YmControl.YmOutcome(false, error.message?.take(90) ?: "Сбой")
+            }
+            val running = ym.isRunning()
+            statusHandler.post {
+                ymBusy = false
+                setYmButtonsEnabled(true)
+                applyYmRunStatus(running)
+                showYmNotice(notice, outcome)
+            }
+        }
+    }
+
+    private fun showYmNotice(view: TextView, outcome: YmControl.YmOutcome) {
+        view.text = outcome.message
+        view.setTextColor(
+            ContextCompat.getColor(this, if (outcome.success) R.color.ym_ok else R.color.ym_error)
+        )
+        ymNoticeClear.remove(view)?.let { statusHandler.removeCallbacks(it) }
+        val clear = Runnable { view.text = "" }
+        ymNoticeClear[view] = clear
+        statusHandler.postDelayed(clear, 20_000)
+    }
+
+    private fun refreshYmPane() {
+        if (ymBusy) {
+            return
+        }
+        ymExecutor.execute {
+            val running = ym.isRunning()
+            statusHandler.post {
+                applyYmRunStatus(running)
+            }
+        }
+    }
+
+    private fun refreshYmRunning() {
+        if (!::binding.isInitialized || binding.paneYm.root.visibility != View.VISIBLE) {
+            return
+        }
+        refreshYmPane()
+    }
+
+    private fun applyYmRunStatus(running: Boolean) {
+        binding.paneYm.ymRunStatus.setText(
+            if (running) R.string.ym_running else R.string.ym_stopped
+        )
+        binding.paneYm.ymRunStatus.setTextColor(
+            ContextCompat.getColor(this, if (running) R.color.ym_ok else R.color.ym_error)
+        )
+    }
+
+    private fun setYmButtonsEnabled(enabled: Boolean) {
+        val form = binding.paneYm
+        form.ymStart.isEnabled = enabled
+        form.ymRestart.isEnabled = enabled
+        form.ymStop.isEnabled = enabled
+        form.ymSendLog.isEnabled = enabled
+        val alpha = if (enabled) 1f else 0.5f
+        form.ymStart.alpha = alpha
+        form.ymRestart.alpha = alpha
+        form.ymStop.alpha = alpha
+        form.ymSendLog.alpha = alpha
+    }
+
     private fun showSentry() {
         persistSentryForm()
+        persistYmForm()
         binding.menuSentry.isSelected = true
+        binding.menuYm.isSelected = false
         binding.menuAbout.isSelected = false
         binding.paneSentry.root.visibility = View.VISIBLE
+        binding.paneYm.root.visibility = View.GONE
         binding.paneAbout.root.visibility = View.GONE
+    }
+
+    private fun showYm() {
+        persistSentryForm()
+        persistYmForm()
+        binding.menuSentry.isSelected = false
+        binding.menuYm.isSelected = true
+        binding.menuAbout.isSelected = false
+        binding.paneSentry.root.visibility = View.GONE
+        binding.paneYm.root.visibility = View.VISIBLE
+        binding.paneAbout.root.visibility = View.GONE
+        refreshYmPane()
     }
 
     private fun showAbout() {
         persistSentryForm()
+        persistYmForm()
         binding.menuSentry.isSelected = false
+        binding.menuYm.isSelected = false
         binding.menuAbout.isSelected = true
         binding.paneSentry.root.visibility = View.GONE
+        binding.paneYm.root.visibility = View.GONE
         binding.paneAbout.root.visibility = View.VISIBLE
     }
 

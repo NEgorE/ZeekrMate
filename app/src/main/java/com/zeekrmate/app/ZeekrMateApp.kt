@@ -14,5 +14,12 @@ class ZeekrMateApp : Application() {
                 Intent(this, SentryScanService::class.java)
             )
         }
+        val ym = YmSettings(this)
+        if (ym.enabled) {
+            ContextCompat.startForegroundService(
+                this,
+                Intent(this, YmSwcService::class.java)
+            )
+        }
     }
 }
