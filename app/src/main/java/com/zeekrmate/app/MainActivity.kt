@@ -45,7 +45,9 @@ class MainActivity : AppCompatActivity() {
     private lateinit var ymSettings: YmSettings
     private val ym by lazy { YmControl(this) }
     private val ymExecutor = Executors.newSingleThreadExecutor()
+    private val splitExecutor = Executors.newSingleThreadExecutor()
     private var ymBusy = false
+    private var splitBusy = false
     private val ymNoticeClear = mutableMapOf<TextView, Runnable>()
     private var ignoreSwitch = false
     private var onStorageGranted: (() -> Unit)? = null
@@ -99,10 +101,12 @@ class MainActivity : AppCompatActivity() {
         )
         bindSentryForm()
         bindYmForm()
+        bindSplitForm()
+        binding.menuSplit.setOnClickListener { showSplit() }
         binding.menuSentry.setOnClickListener { showSentry() }
         binding.menuYm.setOnClickListener { showYm() }
         binding.menuAbout.setOnClickListener { showAbout() }
-        showSentry()
+        showSplit()
         statusHandler.post(statusTicker)
     }
 
@@ -124,6 +128,7 @@ class MainActivity : AppCompatActivity() {
         statusHandler.removeCallbacks(statusTicker)
         ymNoticeClear.values.forEach { statusHandler.removeCallbacks(it) }
         ymExecutor.shutdownNow()
+        splitExecutor.shutdownNow()
         super.onDestroy()
     }
 
@@ -504,12 +509,134 @@ class MainActivity : AppCompatActivity() {
         form.ymSendLog.alpha = alpha
     }
 
+    private fun bindSplitForm() {
+        binding.paneSplit.splitHelperLaunch.setOnClickListener { runSplitHelperLaunch() }
+        binding.paneSplit.splitLaunch.setOnClickListener { runSplitLaunch() }
+        binding.paneSplit.splitProbe.setOnClickListener { runSplitProbe() }
+    }
+
+    private fun setSplitBusy(busy: Boolean) {
+        splitBusy = busy
+        val form = binding.paneSplit
+        val enabled = !busy
+        form.splitHelperLaunch.isEnabled = enabled
+        form.splitLaunch.isEnabled = enabled
+        form.splitProbe.isEnabled = enabled
+        val alpha = if (enabled) 1f else 0.5f
+        form.splitHelperLaunch.alpha = alpha
+        form.splitLaunch.alpha = alpha
+        form.splitProbe.alpha = alpha
+    }
+
+    private fun runSplitHelperLaunch() {
+        if (splitBusy) {
+            return
+        }
+        setSplitBusy(true)
+        val form = binding.paneSplit
+        form.splitResult.setTextColor(ContextCompat.getColor(this, R.color.menu_header_version))
+        form.splitResult.text = getString(R.string.split_helper_busy)
+        splitExecutor.execute {
+            val result = runCatching { SplitHelperClient.splitNaviMusic() }
+            runOnUiThread {
+                result.fold(
+                    onSuccess = { text ->
+                        form.splitResult.text = text
+                        form.splitResult.setTextColor(
+                            ContextCompat.getColor(this, R.color.ym_ok)
+                        )
+                    },
+                    onFailure = { error ->
+                        form.splitResult.text =
+                            error.message?.take(240) ?: error.javaClass.simpleName
+                        form.splitResult.setTextColor(
+                            ContextCompat.getColor(this, R.color.ym_error)
+                        )
+                    }
+                )
+                setSplitBusy(false)
+            }
+        }
+    }
+
+    private fun runSplitLaunch() {
+        if (splitBusy) {
+            return
+        }
+        val form = binding.paneSplit
+        val launcher = SplitFreeformLauncher(this)
+        val pair = runCatching { launcher.prepare() }.getOrElse { error ->
+            form.splitResult.text = error.message?.take(160) ?: error.javaClass.simpleName
+            form.splitResult.setTextColor(ContextCompat.getColor(this, R.color.ym_error))
+            return
+        }
+        runCatching { launcher.startFreeform(pair.maps, pair.mapsBounds) }.onFailure { error ->
+            form.splitResult.text = error.message?.take(160) ?: error.javaClass.simpleName
+            form.splitResult.setTextColor(ContextCompat.getColor(this, R.color.ym_error))
+            return
+        }
+        setSplitBusy(true)
+        statusHandler.postDelayed({
+            runCatching { launcher.startFreeform(pair.music, pair.musicBounds) }
+                .onFailure { error ->
+                    form.splitResult.text = error.message?.take(160) ?: error.javaClass.simpleName
+                    form.splitResult.setTextColor(ContextCompat.getColor(this, R.color.ym_error))
+                    setSplitBusy(false)
+                    return@postDelayed
+                }
+            form.splitResult.text = getString(
+                R.string.split_launch_ok,
+                pair.mapsBounds.width(),
+                pair.musicBounds.width()
+            )
+            form.splitResult.setTextColor(ContextCompat.getColor(this, R.color.ym_ok))
+            setSplitBusy(false)
+        }, SplitFreeformLauncher.SECOND_PANE_DELAY_MS)
+    }
+
+    private fun runSplitProbe() {
+        if (splitBusy) {
+            return
+        }
+        setSplitBusy(true)
+        val form = binding.paneSplit
+        form.splitResult.setTextColor(ContextCompat.getColor(this, R.color.menu_header_version))
+        form.splitResult.text = getString(R.string.split_probe_busy)
+        splitExecutor.execute {
+            val rows = AdbHandshakeProbe.probeKnownHosts()
+            val text = rows.joinToString("\n") { "${it.host}:5555 — ${it.detail}" }
+            val ok = rows.any { it.ok }
+            runOnUiThread {
+                form.splitResult.text = text
+                form.splitResult.setTextColor(
+                    ContextCompat.getColor(this, if (ok) R.color.ym_ok else R.color.ym_error)
+                )
+                setSplitBusy(false)
+            }
+        }
+    }
+
+    private fun showSplit() {
+        persistSentryForm()
+        persistYmForm()
+        binding.menuSplit.isSelected = true
+        binding.menuSentry.isSelected = false
+        binding.menuYm.isSelected = false
+        binding.menuAbout.isSelected = false
+        binding.paneSplit.root.visibility = View.VISIBLE
+        binding.paneSentry.root.visibility = View.GONE
+        binding.paneYm.root.visibility = View.GONE
+        binding.paneAbout.root.visibility = View.GONE
+    }
+
     private fun showSentry() {
         persistSentryForm()
         persistYmForm()
+        binding.menuSplit.isSelected = false
         binding.menuSentry.isSelected = true
         binding.menuYm.isSelected = false
         binding.menuAbout.isSelected = false
+        binding.paneSplit.root.visibility = View.GONE
         binding.paneSentry.root.visibility = View.VISIBLE
         binding.paneYm.root.visibility = View.GONE
         binding.paneAbout.root.visibility = View.GONE
@@ -518,9 +645,11 @@ class MainActivity : AppCompatActivity() {
     private fun showYm() {
         persistSentryForm()
         persistYmForm()
+        binding.menuSplit.isSelected = false
         binding.menuSentry.isSelected = false
         binding.menuYm.isSelected = true
         binding.menuAbout.isSelected = false
+        binding.paneSplit.root.visibility = View.GONE
         binding.paneSentry.root.visibility = View.GONE
         binding.paneYm.root.visibility = View.VISIBLE
         binding.paneAbout.root.visibility = View.GONE
@@ -530,9 +659,11 @@ class MainActivity : AppCompatActivity() {
     private fun showAbout() {
         persistSentryForm()
         persistYmForm()
+        binding.menuSplit.isSelected = false
         binding.menuSentry.isSelected = false
         binding.menuYm.isSelected = false
         binding.menuAbout.isSelected = true
+        binding.paneSplit.root.visibility = View.GONE
         binding.paneSentry.root.visibility = View.GONE
         binding.paneYm.root.visibility = View.GONE
         binding.paneAbout.root.visibility = View.VISIBLE

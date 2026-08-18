@@ -65,6 +65,25 @@
                 </LinearLayout>
 
                 <TextView
+                    android:id="@+id/menuSplit"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/menu_item_background"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:fontFamily="sans-serif-medium"
+                    android:gravity="center_vertical"
+                    android:letterSpacing="0.02"
+                    android:minHeight="@dimen/menu_item_min_height"
+                    android:paddingStart="@dimen/menu_item_padding_horizontal"
+                    android:paddingTop="@dimen/menu_item_padding_vertical"
+                    android:paddingEnd="@dimen/menu_item_padding_horizontal"
+                    android:paddingBottom="@dimen/menu_item_padding_vertical"
+                    android:text="@string/menu_split"
+                    android:textColor="@color/menu_item_text"
+                    android:textSize="@dimen/menu_item_text_size" />
+
+                <TextView
                     android:id="@+id/menuSentry"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -132,6 +151,12 @@
                 android:layout_width="0dp"
                 android:layout_height="match_parent"
                 android:layout_weight="0.7">
+
+                <include
+                    android:id="@+id/paneSplit"
+                    layout="@layout/pane_split"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent" />
 
                 <include
                     android:id="@+id/paneSentry"

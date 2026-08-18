@@ -1,8 +1,17 @@
 <resources>
     <string name="app_name">ZeekrMate</string>
     <string name="menu_about">About</string>
+    <string name="menu_split">Split Mode</string>
     <string name="menu_sentry">SentryMod Sender</string>
     <string name="menu_ym">Control Yandex Music</string>
+    <string name="split_title">Split Mode</string>
+    <string name="split_hint">Кнопка helper работает, только если демон уже запущен с ноутбука (папка helper, файл HelperStart.txt). Навигатор слева 70%, Музыка справа 30%. «Из приложения» — старый тест без shell, окна обычно на весь экран.</string>
+    <string name="split_helper_launch">Через helper: Навигатор + Музыка</string>
+    <string name="split_helper_busy">Жду helper…</string>
+    <string name="split_launch">Из приложения: Навигатор + Музыка</string>
+    <string name="split_launch_ok">Запустил freeform: навигатор %1$dpx / музыка %2$dpx</string>
+    <string name="split_probe">Проверить ADB</string>
+    <string name="split_probe_busy">Проверяю…</string>
     <string name="ym_title">Control Yandex Music</string>
     <string name="ym_hint">Кнопки на руле для Яндекс Музыки: следующий, предыдущий, play/pause.</string>
     <string name="ym_start">Запустить</string>

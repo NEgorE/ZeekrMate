@@ -1,0 +1,108 @@
+ZeekrMate helper — запуск с ноутбука
+====================================
+
+Что это
+-------
+Хелпер — отдельный процесс на ГУ с правами ADB-shell (uid 2000).
+Он умеет то, что самому приложению система не даёт:
+
+  am start --windowingMode 5   — открыть приложение в свободном окне
+  am task resize               — задать размер окна (навигатор 70%, музыка 30%)
+
+ZeekrMate (обычный uid) до adbd на порту 5555 не допускается.
+Поэтому хелпер поднимается ОДИН РАЗ с ноутбука, а кнопка в приложении
+шлёт ему короткую команду по TCP на порт 18790 (не 5555).
+
+Перед запуском на ГУ должен стоять APK, в котором уже есть класс
+com.zeekrmate.app.helper.HelperDaemon (сборка 0.2.11+). Старый APK
+скрипт найдёт, app_process стартует и сразу падает — в логе останется
+только строка start apk=...
+
+После перезагрузки ГУ процесс умирает — шаги 4–5 нужно повторить.
+После обновления APK — тоже: путь к base.apk меняется.
+
+
+Команды (PowerShell, из папки где лежит adb.exe)
+------------------------------------------------
+adb в папке проекта нет — запускай .\adb там, где он лежит.
+Пути к файлам проекта — полные.
+
+
+Скопировать блок запуска:
+
+.\adb devices
+.\adb push D:\Zeekr\ZeekrMate\helper\zeekrmate-helper.sh /data/local/tmp/zeekrmate-helper.sh
+.\adb shell chmod 755 /data/local/tmp/zeekrmate-helper.sh
+.\adb shell sh /data/local/tmp/zeekrmate-helper.sh
+
+Проверить:
+
+.\adb shell "ps -A | grep zeekrmate_helper"
+.\adb shell "cat /data/local/tmp/zeekrmate-helper.log"
+
+Остановить:
+
+.\adb shell "for p in \$(ps -A -o PID,NAME | awk '\$2==\"zeekrmate_helper\"{print \$1}'); do kill -9 \$p; done"
+
+
+Что значит каждая команда
+-------------------------
+
+1) .\adb devices
+
+   Спрашивает у adb-сервера список устройств.
+   Нужно: строка с device. Если unauthorized — подтверди отладку на экране ГУ.
+   Если пусто — нет связи (USB / Wi‑Fi ADB).
+
+
+2) .\adb push D:\Zeekr\ZeekrMate\helper\zeekrmate-helper.sh /data/local/tmp/zeekrmate-helper.sh
+
+   Кладёт скрипт с ноутбука на ГУ в /data/local/tmp (туда shell может писать).
+   Полный путь нужен, потому что текущая папка — не проект, а папка adb.
+   Скрипт сам находит APK ZeekrMate и запускает app_process.
+
+
+3) .\adb shell chmod 755 /data/local/tmp/zeekrmate-helper.sh
+
+   Выдаёт права «можно выполнять». Без этого sh может отказаться.
+
+
+4) .\adb shell sh /data/local/tmp/zeekrmate-helper.sh
+
+   Запускает хелпер на ГУ:
+   - pm path com.zeekrmate.app — путь к установленному APK
+   - убивает старый процесс с именем zeekrmate_helper, если был
+   - CLASSPATH=APK app_process --nice-name=zeekrmate_helper ...
+     поднимает JVM от shell и вызывает HelperDaemon
+   - setsid — процесс не умрёт, когда закроется adb shell
+
+   Успех: «helper слушает 0.0.0.0:18790»
+
+   Если снова «не стартовал» и в логе нет Error/ClassNotFound — ошибка
+   JVM. Смотри лог целиком и при необходимости передний план:
+
+   .\adb shell "CLASSPATH=\$(pm path com.zeekrmate.app | sed -n '1s/^package://p') app_process /system/bin com.zeekrmate.app.helper.HelperDaemon"
+
+   ClassNotFound = на ГУ старый APK, сначала поставь 0.2.11+.
+
+
+5) .\adb shell "ps -A | grep zeekrmate_helper"
+   .\adb shell "cat /data/local/tmp/zeekrmate-helper.log"
+
+   ps — есть ли процесс с этим именем.
+   лог — должен быть BOOT uid=2000 и строка LISTEN 0.0.0.0:18790.
+   uid должен быть 2000 (shell). Если другой — команды am не сработают как надо.
+
+
+6) Остановить — снимает процесс по точному имени (comm), не по всей командной строке.
+   Так нельзя случайно убить сам grep/awk.
+
+
+Как пользоваться из приложения
+------------------------------
+На вкладке Split Mode кнопка «Через helper: Навигатор + Музыка».
+Она соединяется с 127.0.0.1 / 198.18.34.15 / 192.168.55.15, порт 18790
+и шлёт SPLIT_NAVI_MUSIC.
+
+Если хелпер не запущен — кнопка напишет, что он не отвечает.
+Порт 5555 эта кнопка не трогает.

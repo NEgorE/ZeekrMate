@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/splitScroll"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:clipToPadding="false"
+    android:fillViewport="true"
+    android:paddingHorizontal="@dimen/readme_padding_horizontal"
+    android:paddingTop="36dp"
+    android:paddingBottom="48dp"
+    android:scrollbarThumbVertical="@drawable/scrollbar_thumb"
+    android:scrollbars="vertical"
+    android:visibility="gone">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:fontFamily="sans-serif-medium"
+            android:text="@string/split_title"
+            android:textColor="@color/readme_text"
+            android:textSize="@dimen/readme_h2_size" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:fontFamily="sans-serif"
+            android:text="@string/split_hint"
+            android:textColor="@color/menu_header_version"
+            android:textSize="@dimen/field_label_size" />
+
+        <TextView
+            android:id="@+id/splitHelperLaunch"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="28dp"
+            android:background="@drawable/edit_field_background"
+            android:clickable="true"
+            android:focusable="true"
+            android:fontFamily="sans-serif-medium"
+            android:gravity="center"
+            android:minHeight="@dimen/field_min_height"
+            android:paddingHorizontal="16dp"
+            android:text="@string/split_helper_launch"
+            android:textColor="@color/readme_text"
+            android:textSize="@dimen/field_text_size" />
+
+        <TextView
+            android:id="@+id/splitLaunch"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:background="@drawable/edit_field_background"
+            android:clickable="true"
+            android:focusable="true"
+            android:fontFamily="sans-serif-medium"
+            android:gravity="center"
+            android:minHeight="@dimen/field_min_height"
+            android:paddingHorizontal="16dp"
+            android:text="@string/split_launch"
+            android:textColor="@color/readme_text"
+            android:textSize="@dimen/field_text_size" />
+
+        <TextView
+            android:id="@+id/splitProbe"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:background="@drawable/edit_field_background"
+            android:clickable="true"
+            android:focusable="true"
+            android:fontFamily="sans-serif-medium"
+            android:gravity="center"
+            android:minHeight="@dimen/field_min_height"
+            android:paddingHorizontal="16dp"
+            android:text="@string/split_probe"
+            android:textColor="@color/readme_text"
+            android:textSize="@dimen/field_text_size" />
+
+        <TextView
+            android:id="@+id/splitResult"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:fontFamily="sans-serif"
+            android:textColor="@color/menu_header_version"
+            android:textSize="@dimen/field_text_size" />
+    </LinearLayout>
+</androidx.core.widget.NestedScrollView>
